@@ -11,8 +11,8 @@
  
 #include <thread>
 #include <chrono>
-#include <std_msgs/Header.h>
-#include <std_msgs/Float32.h>
+// #include <std_msgs/Header.h>
+// #include <std_msgs/Float32.h>
 #include <ceres/ceres.h>
 #include <unordered_map>
 #include <queue>
@@ -20,6 +20,7 @@
 #include <opencv2/core/eigen.hpp>
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/Geometry>
+#include <spdlog/spdlog.h>
 
 #include "parameters.h"
 #include "feature_manager.h"
@@ -116,7 +117,8 @@ class Estimator
     class imgTracker{
         public:
             imgTracker(camera_module_info& cam_module, vector<shared_ptr<ImageFrame>>& image_frame_ptr, int max_feature_per_module): cam_info_{cam_module}, featureTracker_{cam_module.depth_, cam_module.stereo_, max_feature_per_module}, f_manager_(cam_module.depth_, cam_module.stereo_, image_frame_ptr), image_buffer_(5U){
-                ROS_WARN("set tracker, id %d", cam_module.module_id_);
+                // ROS_WARN("set tracker, id %d", cam_module.module_id_);
+                // spdlog::warn("set tracker, id {}", cam_module.module_id_);
                 featureTracker_.readIntrinsicParameter(cam_module.calib_file_);
             }
 

@@ -20,8 +20,6 @@
 using namespace Eigen;
 using namespace std;
 
-
-
 struct SFMFeature
 {
     bool state;

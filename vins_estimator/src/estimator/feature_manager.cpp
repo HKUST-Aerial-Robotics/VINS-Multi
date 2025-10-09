@@ -8,6 +8,8 @@
  *******************************************************/
 
 #include "feature_manager.h"
+#include <spdlog/spdlog.h>
+#include <cassert>
 
 namespace vins_multi{
 
@@ -25,7 +27,9 @@ void FeatureManager::clearState()
 }
 
 FeatureManager::~FeatureManager(){
-    ROS_ERROR("feature manager deleted");
+    // ROS_ERROR("feature manager deleted");
+    spdlog::info("feature manager deleted");
+
 }
 
 int FeatureManager::getFeatureCount()
@@ -170,8 +174,10 @@ bool FeatureManager::addFeatureCheckParallax(const map<int,FeaturePerFrame> &fea
     }
     else
     {
-        ROS_DEBUG("parallax_sum: %lf, parallax_num: %d", parallax_sum, parallax_num);
-        ROS_DEBUG("current parallax: %lf", parallax_sum / parallax_num * FOCAL_LENGTH);
+        // ROS_DEBUG("parallax_sum: %lf, parallax_num: %d", parallax_sum, parallax_num);
+        // ROS_DEBUG("current parallax: %lf", parallax_sum / parallax_num * FOCAL_LENGTH);
+        spdlog::debug("parallax_sum: {}, parallax_num: {}", parallax_sum, parallax_num);
+        spdlog::debug("current parallax: {}", parallax_sum / parallax_num * FOCAL_LENGTH);
         last_average_parallax_ = parallax_sum / parallax_num * FOCAL_LENGTH;
         return parallax_sum / parallax_num >= MIN_PARALLAX;
     }
@@ -741,7 +747,8 @@ void FeatureManager::triangulate(vector<shared_ptr<ImageFrame>>& frameHist, cons
                 if (imu_i == imu_j)
                     continue;
             }
-            ROS_ASSERT(svd_idx == svd_A.rows());
+            // ROS_ASSERT(svd_idx == svd_A.rows());
+            assert(svd_idx == svd_A.rows()); // efficiency sensetive point
             Eigen::Vector4d svd_V = Eigen::JacobiSVD<Eigen::MatrixXd>(svd_A, Eigen::ComputeThinV).matrixV().rightCols<1>();
             double svd_method_depth = svd_V[2] / svd_V[3];
             //it_per_id->estimated_depth = -b / A;

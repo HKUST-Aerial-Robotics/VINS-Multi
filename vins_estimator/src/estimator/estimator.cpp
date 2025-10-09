@@ -8,8 +8,9 @@
  *******************************************************/
 
 #include "estimator.h"
-#include "../utility/visualization.h"
 #include "feature_manager.h"
+// #include "../utility/visualization.h"
+
 
 namespace vins_multi{
 
@@ -17,7 +18,8 @@ namespace vins_multi{
 
 Estimator::Estimator()
 {
-    ROS_INFO("init begins");
+    // ROS_INFO("init begins");
+    spdlog::info("init estimator");
     initThreadFlag_ = false;
     last_marginalization_info_ = nullptr;
     clearState();
@@ -211,7 +213,9 @@ void Estimator::inputImage(const unsigned int unique_id, double t, const cv::Mat
     if (SHOW_TRACK)
     {
         const cv::Mat& imgTrack = img_trackers_[unique_id]->featureTracker_.getTrackImage();
+        #if 0
         pubTrackImage(imgTrack, t, unique_id);
+        #endif
     }
 
     double real_img_time = t + img_trackers_[unique_id]->cam_info_.td_;
@@ -310,7 +314,9 @@ void Estimator::inputIMU(double t, const Vector6d &imu_data)
 
     if (solver_flag_ == NON_LINEAR)
     {
+        #if 0
         pubLatestOdometry(*this);
+        #endif
 
         // cout<<"propagate imu for "<<t - state_hist_[image_frame_window_.all_image_frame_ptr_.rbegin()->second->state_idx_].t_<<"s"<<endl;
     }
@@ -453,7 +459,8 @@ void Estimator::updateFeatureTrackerMaxCnt(){
 
     for(unsigned int i = 0; i< img_trackers_.size(); i++){
         img_trackers_[i]->featureTracker_.max_cnt = min(max(static_cast<int>(ceil(track_num(i) / track_num_sum * MAX_CNT)), MIN_TRACK_NUM_PER_MODULE), MAX_TRACK_NUM_PER_MODULE);
-        ROS_DEBUG("cam %d max cnt: %d, track num: %lf", i, int(img_trackers_[i]->featureTracker_.max_cnt), track_num(i));
+        // ROS_DEBUG("cam %d max cnt: %d, track num: %lf", i, int(img_trackers_[i]->featureTracker_.max_cnt), track_num(i));
+        spdlog::debug("cam {} max cnt: {}, track num: {}", i, int(img_trackers_[i]->featureTracker_.max_cnt), track_num(i));
     }
 }
 
@@ -472,7 +479,8 @@ bool Estimator::CheckKeepImageUpdatePriority(const int cam_unique_id, const doub
     img_trackers_[cam_unique_id]->frame_time_hist_.emplace_back(t);
 
     if(t - this_last_keep_frame_time < MIN_FRAME_INTERVAL_PER_MODULE){
-        ROS_DEBUG("frame too fast");
+        // ROS_DEBUG("frame too fast");
+        spdlog::debug("frame too fast");
         return false;
     }
 
@@ -520,8 +528,8 @@ bool Estimator::CheckKeepImageUpdatePriority(const int cam_unique_id, const doub
     if(image_frame_window_.all_image_frame_ptr_.empty()){
         img_trackers_[cam_unique_id]->reset_frame_time_priority();
         img_trackers_[cam_unique_id]->last_keep_frame_time_ = t;
-        ROS_DEBUG("first frame");
-
+        // ROS_DEBUG("first frame");
+        spdlog::debug("first frame");
         return true;
     }
 
@@ -530,13 +538,15 @@ bool Estimator::CheckKeepImageUpdatePriority(const int cam_unique_id, const doub
     if(t >= last_frame_time){
         if(t - last_frame_time < MIN_FRAME_INTERVAL_FOR_OPT){
             img_trackers_[cam_unique_id]->increase_frame_time_priority();
-            ROS_DEBUG("inrease priority");
+            // ROS_DEBUG("inrease priority");
+            spdlog::debug("inrease priority");
             return false;
         }
         else{
             img_trackers_[cam_unique_id]->reset_frame_time_priority();
             img_trackers_[cam_unique_id]->last_keep_frame_time_ = t;
-            ROS_DEBUG("insert at back");
+            // ROS_DEBUG("insert at back");
+            spdlog::debug("insert at back");
             return true;
         }
     }
@@ -544,7 +554,8 @@ bool Estimator::CheckKeepImageUpdatePriority(const int cam_unique_id, const doub
     // insert at front
     double first_frame_time = image_frame_window_.all_image_frame_ptr_.begin()->first;
     if(t <= first_frame_time){
-        ROS_DEBUG("frame too old");
+        // ROS_DEBUG("frame too old");
+        spdlog::debug("frame too old");
         return false;
     }
 
@@ -555,21 +566,24 @@ bool Estimator::CheckKeepImageUpdatePriority(const int cam_unique_id, const doub
             auto next_rit = next(rit);
             if(rit->first - t < MIN_FRAME_INTERVAL_FOR_OPT || t - next_rit->first < MIN_FRAME_INTERVAL_FOR_OPT){
                 img_trackers_[cam_unique_id]->increase_frame_time_priority();
-                ROS_DEBUG("inrease priority");
+                // ROS_DEBUG("inrease priority");
+                spdlog::debug("inrease priority");
 
                 return false;
             }
             else{
                 img_trackers_[cam_unique_id]->reset_frame_time_priority();
                 img_trackers_[cam_unique_id]->last_keep_frame_time_ = t;
-                ROS_DEBUG("inrease in the middle");
+                // ROS_DEBUG("inrease in the middle");
+                spdlog::debug("inrease in the middle");
 
                 return true;
             }
         }
     }
 
-    ROS_ERROR("bug in keepImage");
+    // ROS_ERROR("bug in keepImage");
+    spdlog::error("bug in keepImage");
     // img_trackers_[cam_unique_id]->last_keep_frame_time_ = t;
     return true;
 }
@@ -610,12 +624,14 @@ bool Estimator::IMUInitReady(double img_time){
                 return true;
             }
             else{
-                ROS_WARN("imu not enough");
+                // ROS_WARN("imu not enough");
+                spdlog::warn("imu not enough");
                 return false;
             }
         }
     }
-    ROS_WARN("imu not arrived");
+    // ROS_WARN("imu not arrived");
+    spdlog::warn("imu not arrived");
     return false;
 }
 
@@ -794,8 +810,10 @@ void Estimator::addPreintegrationToNextFrame(unsigned int remove_frame_state_idx
 
 void Estimator::processImage(const deque<State>::iterator img_state_it, const map<double, shared_ptr<ImageFrame>>::iterator img_frame_it)
 {
-    ROS_DEBUG("new image coming ------------------------------------------");
-    ROS_DEBUG("Adding feature points %lu", img_state_it->image_frame_ptr_->points_.size());
+    // ROS_DEBUG("new image coming ------------------------------------------");
+    spdlog::debug("new image coming ------------------------------------------");
+    // ROS_DEBUG("Adding feature points %lu", img_state_it->image_frame_ptr_->points_.size());
+    spdlog::debug("Adding feature points {}", img_state_it->image_frame_ptr_->points_.size());
 
     int cam_unique_id = img_state_it->image_frame_ptr_->cam_module_unique_id_;
      FeatureTracker* featureTracker_ptr = &img_trackers_[cam_unique_id]->featureTracker_;
@@ -814,12 +832,14 @@ void Estimator::processImage(const deque<State>::iterator img_state_it, const ma
         img_state_it->image_frame_ptr_->is_key_frame_ = false;
         //printf("non-keyframe\n");
     }
-    ROS_DEBUG("addFeatureCheckParallax costs: %fms", t_add_feature.toc());
-
-
-    ROS_DEBUG("%s", marginalization_flag_ ? "Non-keyframe" : "Keyframe");
-    ROS_DEBUG("Solving %d", frame_count_);
-    ROS_DEBUG("cam %d, number of feature: %d", cam_unique_id, f_manager_ptr->getFeatureCount());
+    // ROS_DEBUG();
+    // ROS_DEBUG("%s", marginalization_flag_ ? "Non-keyframe" : "Keyframe");
+    // ROS_DEBUG("Solving %d", frame_count_);
+    // ROS_DEBUG("cam %d, number of feature: %d", cam_unique_id, f_manager_ptr->getFeatureCount());
+    spdlog::debug("addFeatureCheckParallax costs: {}ms", t_add_feature.toc());
+    spdlog::debug("%s", marginalization_flag_ ? "Non-keyframe" : "Keyframe");
+    spdlog::debug("Solving {}", frame_count_);
+    spdlog::debug("cam {}, number of feature: {}", cam_unique_id, f_manager_ptr->getFeatureCount());
 
     if(img_frame_it != image_frame_window_.all_image_frame_ptr_.begin())
         propagateIMU(*(img_state_it-1), *img_state_it);
@@ -939,7 +959,8 @@ void Estimator::processImage(const deque<State>::iterator img_state_it, const ma
                 processWindow(cam_unique_id);
                 updateLatestStates(cam_unique_id);
                 solver_flag_ = NON_LINEAR;
-                ROS_INFO("Initialization by stereo finish!");
+                // ROS_INFO("Initialization by stereo finish!");
+                spdlog::info("Initialization by stereo finish!");
                 std::cout<<"tic1: "<<img_trackers_[cam_unique_id]->cam_info_.tic_[1].transpose()<<std::endl;
                 std::cout<<"ric1: \n"<<img_trackers_[cam_unique_id]->cam_info_.ric_[1].toRotationMatrix()<<std::endl;
             }
@@ -972,7 +993,8 @@ void Estimator::processImage(const deque<State>::iterator img_state_it, const ma
                     // }
                 }
                 else{
-                    ROS_ERROR("init by icp failed!");
+                    // ROS_ERROR("init by icp failed!");
+                    spdlog::error("init by icp failed!");
                     auto second_last_frame_ptr = *next(image_frame_window_.cam_wise_image_frame_ptr_[cam_unique_id].rbegin());
                     image_frame_window_.cam_wise_image_frame_ptr_[cam_unique_id].back()->R_ = second_last_frame_ptr->R_;
                     image_frame_window_.cam_wise_image_frame_ptr_[cam_unique_id].back()->T_ = second_last_frame_ptr->T_;
@@ -1035,7 +1057,8 @@ void Estimator::processImage(const deque<State>::iterator img_state_it, const ma
                     processWindow(cam_unique_id);
                     updateLatestStates(cam_unique_id);
                     solver_flag_ = NON_LINEAR;
-                    ROS_INFO("Initialization by depth finish!");
+                    // ROS_INFO("Initialization by depth finish!");
+                    spdlog::info("Initialization by depth finish!");
                 }
             }
         }
@@ -1066,7 +1089,8 @@ void Estimator::processImage(const deque<State>::iterator img_state_it, const ma
             f_manager_ptr->triangulate(image_frame_window_.cam_wise_image_frame_ptr_[cam_unique_id], img_trackers_[cam_unique_id]->cam_info_.tic_[0], img_trackers_[cam_unique_id]->cam_info_.ric_[0]);
         }
         processWindow(cam_unique_id);
-        ROS_DEBUG("solver costs: %fms", t_solve.toc());
+        // ROS_DEBUG("solver costs: %fms", t_solve.toc());
+        spdlog::debug("solver costs: {}ms", t_solve.toc());
 
         // if (! MULTIPLE_THREAD)
         // {
@@ -1139,7 +1163,8 @@ void Estimator::processWindow(const int img_cam_unique_id){
         FeatureManager* f_manager_ptr = &img_trackers_[img_cam_unique_id]->f_manager_;
         f_manager_ptr->outliersRejection();
         f_manager_ptr->removeFailures();
-        ROS_DEBUG("outlier time: %lf ms", tt.toc());
+        // ROS_DEBUG("outlier time: %lf ms", tt.toc());
+        spdlog::debug("outlier time: {} ms", tt.toc());
 
         if(ESTIMATE_TD){
             reorderWindow();
@@ -1200,7 +1225,8 @@ void Estimator::double2vector()
         Matrix3d rot_diff = Utility::ypr2R(Vector3d(y_diff, 0, 0));
         if (abs(abs(origin_R0.y()) - 90) < 1.0 || abs(abs(origin_R00.y()) - 90) < 1.0)
         {
-            ROS_DEBUG("euler singular point!");
+            // ROS_DEBUG("euler singular point!");
+            spdlog::debug("euler singular point!");
             rot_diff = frame0ptr->R_ * Quaterniond(para_pose[6],
                                            para_pose[3],
                                            para_pose[4],
@@ -1494,7 +1520,8 @@ void Estimator::optimization()
 
         // ROS_WARN("cam %d depth_factor_cnt: %d, depth_reproj_factor_cnt: %d, reproj_factor_cnt: %d, long_track_feature_num: %ld, stereo_2f1c_factor_cnt: %d, stereo_2f2c_factor_cnt: %d", cam_unique_id, depth_factor_cnt, depth_reproj_factor_cnt, reproj_factor_cnt, long_track_feature_num, stereo_2f1c_factor_cnt, stereo_2f2c_factor_cnt);
     }
-    ROS_DEBUG("visual measurement count: %d", f_m_cnt);
+    // ROS_DEBUG("visual measurement count: %d", f_m_cnt);
+    spdlog::debug("visual measurement count: {}", f_m_cnt);
     // printf("prepare for ceres: %f \n", t_prepare.toc());
 
     // cout<<"num res blocks: "<< problem_ptr_->NumResidualBlocks()<<endl;
@@ -1665,11 +1692,13 @@ void Estimator::constructMarginalizationFator(){
 
         TicToc t_pre_margin;
         marginalization_info->preMarginalize();
-        ROS_DEBUG("pre marginalization %f ms", t_pre_margin.toc());
+        // ROS_DEBUG("pre marginalization %f ms", t_pre_margin.toc());
+        spdlog::debug("pre marginalization {} ms", t_pre_margin.toc());
 
         TicToc t_margin;
         marginalization_info->marginalize();
-        ROS_DEBUG("marginalization %f ms", t_margin.toc());
+        // ROS_DEBUG("marginalization %f ms", t_margin.toc());
+        spdlog::debug("marginalization {} ms", t_margin.toc());
 
         std::unordered_map<long, double *> addr_shift;
         for (auto frame_it = next(image_frame_window_.all_image_frame_ptr_.begin()); frame_it !=  image_frame_window_.all_image_frame_ptr_.end(); frame_it++)
@@ -1711,7 +1740,8 @@ void Estimator::constructMarginalizationFator(){
                 vector<int> drop_set;
                 for (int i = 0; i < static_cast<int>(last_marginalization_parameter_blocks_.size()); i++)
                 {
-                    ROS_ASSERT(last_marginalization_parameter_blocks_[i] != frame_to_margin_->para_SpeedBias_);
+                    // ROS_ASSERT(last_marginalization_parameter_blocks_[i] != frame_to_margin_->para_SpeedBias_);
+                    assert(last_marginalization_parameter_blocks_[i] != frame_to_margin_->para_SpeedBias_);
                     if (last_marginalization_parameter_blocks_[i] == frame_to_margin_->para_Pose_)
                         drop_set.push_back(i);
                 }
@@ -1725,14 +1755,18 @@ void Estimator::constructMarginalizationFator(){
             }
 
             TicToc t_pre_margin;
-            ROS_DEBUG("begin marginalization");
+            // ROS_DEBUG("begin marginalization");
+            spdlog::debug("begin marginalization");
             marginalization_info->preMarginalize();
-            ROS_DEBUG("end pre marginalization, %f ms", t_pre_margin.toc());
+            // ROS_DEBUG("end pre marginalization, %f ms", t_pre_margin.toc());
+            spdlog::debug("end pre marginalization, {} ms", t_pre_margin.toc());
 
             TicToc t_margin;
-            ROS_DEBUG("begin marginalization");
+            // ROS_DEBUG("begin marginalization");
+            spdlog::debug("begin marginalization");
             marginalization_info->marginalize();
-            ROS_DEBUG("end marginalization, %f ms", t_margin.toc());
+            // ROS_DEBUG("end marginalization, %f ms", t_margin.toc());
+            spdlog::debug("end marginalization, {} ms", t_margin.toc());
 
             std::unordered_map<long, double *> addr_shift;
             for (auto frame_it = image_frame_window_.all_image_frame_ptr_.begin(); frame_it !=  image_frame_window_.all_image_frame_ptr_.end(); frame_it++)
@@ -2039,7 +2073,7 @@ void Estimator::updateLatestStates(const int unique_id)
     //     printf("td %d: %lf\n", i, img_trackers_[i]->cam_info_.td_);
     //     printf("cam %d frame cnt: %d\n", i, image_frame_window_.cam_wise_image_frame_ptr_[i].size());
     // }
-
+    #if 0
     std_msgs::Header header;
     header.frame_id = "world";
     header.stamp = ros::Time(image_frame_window_.all_image_frame_ptr_.rbegin()->second->t_);
@@ -2056,6 +2090,7 @@ void Estimator::updateLatestStates(const int unique_id)
         latest_image_time_ = image_frame->t_;
 
     }
+    #endif
     // printStatistics(*this, 0);
 }
 

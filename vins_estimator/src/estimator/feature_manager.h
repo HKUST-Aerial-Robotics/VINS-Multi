@@ -16,8 +16,9 @@
 #include <numeric>
 #include <eigen3/Eigen/Dense>
 
-#include <ros/console.h>
-#include <ros/assert.h>
+// #include <ros/console.h>
+// #include <ros/assert.h>
+
 
 #include "parameters.h"
 #include "../utility/tic_toc.h"

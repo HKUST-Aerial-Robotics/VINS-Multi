@@ -9,25 +9,25 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -Wall -g")
 set(ENABLE_BACKWARD false)
 set(CUDA false)
 
-find_package(catkin REQUIRED COMPONENTS
-    roscpp
-    std_msgs
-    geometry_msgs
-    nav_msgs
-    tf
-    cv_bridge
-    # camera_models
-    image_transport
-    nodelet
-    message_filters
-    sensor_msgs)
-
 find_package(OpenCV REQUIRED)
 find_package(spdlog REQUIRED)
+find_package(Ceres REQUIRED)
+find_package(Eigen3)
+
+# find_package(catkin REQUIRED COMPONENTS
+#     roscpp
+#     std_msgs
+#     geometry_msgs
+#     nav_msgs
+#     tf
+#     cv_bridge
+#     # camera_models
+#     image_transport
+#     nodelet
+#     message_filters
+#     sensor_msgs)
 
 message(WARNING "OpenCV_VERSION: ${OpenCV_VERSION}")
-
-find_package(Ceres REQUIRED)
 
 if (CUDA)
   find_package(CUDA QUIET)
@@ -69,19 +69,12 @@ else()
     set(LIBDW "")
 endif()
 
-include_directories(${catkin_INCLUDE_DIRS} ${CERES_INCLUDE_DIRS})
+include_directories(${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${CERES_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
-find_package(Eigen3)
-include_directories(
-  ${catkin_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIR}
-)
+
 
 catkin_package()
-
-# add_subdirectory(${PROJECT_SOURCE_DIR}/../camera_models 
-#                  ${CMAKE_CURRENT_BINARY_DIR}/camera_models)
 
 include_directories(
   ${PROJECT_SOURCE_DIR}/../camera_models/include
@@ -93,20 +86,18 @@ add_library(parameter_lib_multi SHARED
 target_link_libraries(parameter_lib_multi
     ${OpenCV_LIBS} ${LIBDW})
 
-add_library(utility_lib_multi SHARED
-    src/utility/utility.cpp
-    src/utility/visualization.cpp
-    src/utility/CameraPoseVisualization.cpp
+add_library(utility_lib_multi
+  src/utility/utility.cpp
 )
 target_link_libraries(utility_lib_multi
-    ${catkin_LIBRARIES} ${LIBDW})
+  ${LIBDW})
 
 
 add_library(frontend_lib_multi SHARED
     src/featureTracker/feature_tracker.cpp
 )
 target_link_libraries(frontend_lib_multi
-    parameter_lib_multi ${catkin_LIBRARIES} ${OpenCV_LIBS} ${LIBDW})
+    parameter_lib_multi ${OpenCV_LIBS} ${LIBDW})
 
 add_library(init_lib_multi SHARED
     src/initial/initial_aligment.cpp
@@ -126,22 +117,30 @@ add_library(factor_lib_multi SHARED
 target_link_libraries(factor_lib_multi
     camera_models ${OpenCV_LIBS} ${CERES_LIBRARIES} ${LIBDW} ${spdlog_LIBRARIES})
 
-
 add_library(estimator_lib_multi SHARED
     src/estimator/estimator.cpp
     src/estimator/feature_manager.cpp
 )
+
 target_link_libraries(estimator_lib_multi
-    parameter_lib_multi utility_lib_multi init_lib_multi factor_lib_multi ${catkin_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIBRARIES} ${LIBDW})
+    parameter_lib_multi utility_lib_multi init_lib_multi factor_lib_multi ${OpenCV_LIBS} ${CERES_LIBRARIES} ${LIBDW})
 
-add_library(rosnode_lib_multi SHARED
-    src/rosNode.cpp
-)
-target_link_libraries(rosnode_lib_multi ${catkin_LIBRARIES} ${OpenCV_LIBS} ${LIBDW})
 
-add_executable(${PROJECT_NAME} src/rosNodeMain.cpp)
-target_link_libraries(${PROJECT_NAME} rosnode_lib_multi parameter_lib_multi utility_lib_multi estimator_lib_multi frontend_lib_multi init_lib_multi factor_lib_multi ${LIBDW})
+# #ROS related
+# add_library(visualization
+#     src/utility/visualization.cpp
+#     src/utility/CameraPoseVisualization.cpp
+# )
+# target_link_libraries(visualization
+#     ${catkin_LIBRARIES} ${LIBDW})
+  
+# add_library(rosnode_lib_multi SHARED
+#     src/rosNode.cpp
+# )
+# target_link_libraries(rosnode_lib_multi ${catkin_LIBRARIES} ${OpenCV_LIBS} ${LIBDW})
 
-add_library(${PROJECT_NAME}_nodelet_lib src/rosNodelet.cpp)
-target_link_libraries(${PROJECT_NAME}_nodelet_lib rosnode_lib_multi parameter_lib_multi utility_lib_multi estimator_lib_multi frontend_lib_multi init_lib_multi factor_lib_multi ${LIBDW})
+# add_executable(${PROJECT_NAME} src/rosNodeMain.cpp)
+# target_link_libraries(${PROJECT_NAME} rosnode_lib_multi parameter_lib_multi utility_lib_multi estimator_lib_multi frontend_lib_multi init_lib_multi factor_lib_multi ${LIBDW})
 
+# add_library(${PROJECT_NAME}_nodelet_lib src/rosNodelet.cpp)
+# target_link_libraries(${PROJECT_NAME}_nodelet_lib rosnode_lib_multi parameter_lib_multi utility_lib_multi estimator_lib_multi frontend_lib_multi init_lib_multi factor_lib_multi ${LIBDW})

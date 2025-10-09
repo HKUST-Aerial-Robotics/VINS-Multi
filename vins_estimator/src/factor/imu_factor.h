@@ -8,13 +8,14 @@
  *******************************************************/
 
 #pragma once
-#include <ros/assert.h>
+// #include <ros/assert.h>
 #include <iostream>
 #include <eigen3/Eigen/Dense>
 
 #include "../utility/utility.h"
 #include "../estimator/parameters.h"
 #include "../estimator/integration_base.h"
+#include <spdlog/spdlog.h>
 
 #include <ceres/ceres.h>
 
@@ -100,7 +101,8 @@ class IMUFactor : public ceres::SizedCostFunction<15, 7, 9, 7, 9>
 
         if(residual.hasNaN()){
             std::cout<<residual<<std::endl;
-            ROS_ERROR("imu residual has nan!");
+            // ROS_ERROR("imu residual has nan!");
+            spdlog::error("imu residual has nan!");
         }
 
         if (jacobians)
@@ -116,8 +118,10 @@ class IMUFactor : public ceres::SizedCostFunction<15, 7, 9, 7, 9>
 
             if (pre_integration->jacobian.maxCoeff() > 1e8 || pre_integration->jacobian.minCoeff() < -1e8)
             {
-                ROS_WARN("numerical unstable in preintegration jacobian");
-                ROS_ERROR("imu covar dt %lf", pre_integration->sum_dt);
+                // ROS_WARN("numerical unstable in preintegration jacobian");
+                spdlog::warn("numerical unstable in preintegration jacobian");
+                // ROS_ERROR("imu covar dt %lf", pre_integration->sum_dt);
+                spdlog::warn("imu covar dt {}", pre_integration->sum_dt);
                 cout<<pre_integration->covariance<<endl;
                 //std::cout << pre_integration->jacobian << std::endl;
 ///                ROS_BREAK();
@@ -144,8 +148,10 @@ class IMUFactor : public ceres::SizedCostFunction<15, 7, 9, 7, 9>
 
                 if (jacobian_pose_i.maxCoeff() > 1e8 || jacobian_pose_i.minCoeff() < -1e8)
                 {
-                    ROS_WARN("numerical unstable in preintegration pose i");
-                    ROS_ERROR("imu covar dt %lf", pre_integration->sum_dt);
+                    // ROS_WARN("numerical unstable in preintegration pose i");
+                    spdlog::warn("numerical unstable in preintegration pose i");
+                    // ROS_ERROR("imu covar dt %lf", pre_integration->sum_dt);
+                    spdlog::warn("imu covar dt {}", pre_integration->sum_dt);
                     cout<<pre_integration->covariance<<endl;
                     std::cout << sqrt_info << std::endl;
                     //ROS_BREAK();

@@ -8,6 +8,7 @@
  *******************************************************/
 
 #include "initial_alignment.h"
+#include <spdlog/spdlog.h>
 
 namespace vins_multi{
 
@@ -34,7 +35,10 @@ void solveGyroscopeBias(map<double, shared_ptr<ImageFrame>>& all_image_frame_ptr
         b += tmp_A.transpose() * tmp_b;
     }
     delta_bg = A.ldlt().solve(b);
-    ROS_WARN_STREAM("gyroscope bias initial calibration " << delta_bg.transpose());
+    // ROS_WARN_STREAM("gyroscope bias initial calibration " << delta_bg.transpose());
+    std::stringstream ss;
+    ss << delta_bg.transpose();
+    spdlog::warn("gyroscope bias initial calibration {}", ss.str());
 
     // for (int i = 0; i <= WINDOW_SIZE; i++)
     //     Bgs[i] += delta_bg;
