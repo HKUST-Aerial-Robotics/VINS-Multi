@@ -14,7 +14,7 @@
 
 #include "../utility/utility.h"
 #include "../estimator/parameters.h"
-#include "integration_base.h"
+#include "../estimator/integration_base.h"
 
 #include <ceres/ceres.h>
 

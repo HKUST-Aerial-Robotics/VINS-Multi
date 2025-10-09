@@ -13,7 +13,8 @@
 #include <vector>
 #include <list>
 #include <mutex>
-#include "../factor/integration_base.h"
+#include <spdlog/spdlog.h>
+#include "integration_base.h"
 
 using namespace std;
 using namespace Eigen;
@@ -210,15 +211,19 @@ class ImageFrameWindow
 
       if(!all_image_frame_ptr_.empty() &&  frame_real_time< all_image_frame_ptr_.begin()->first){
         // should not happen after init with proper td
-        ROS_ERROR("try to insert at front");
+        // ROS_ERROR("try to insert at front");
+        spdlog::error("try to insert at front");
         return all_image_frame_ptr_.end();
       }
       
       auto insert_it_and_is_inserted = all_image_frame_ptr_.insert(make_pair(frame_real_time , image_frame_ptr));
-      ROS_DEBUG("insert image frame at t: %lf", frame_real_time);
+      // ROS_DEBUG("insert image frame at t: %lf", frame_real_time);
+      spdlog::debug("insert image frame at t: {}", frame_real_time);
+
       bool is_inserted = insert_it_and_is_inserted.second;
       if(!is_inserted){
-        ROS_ERROR("same time, no insertion");
+        // ROS_ERROR("same time, no insertion");
+        spdlog::error("same time, no insertion");
         return all_image_frame_ptr_.end();
       }
       auto insert_it = insert_it_and_is_inserted.first;

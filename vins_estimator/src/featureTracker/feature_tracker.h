@@ -54,7 +54,8 @@ public:
     FeatureTracker(bool is_depth, bool is_stereo, int feature_max_cnt);
     FeatureTracker(const FeatureTracker& s) = delete;
     ~FeatureTracker(){
-        ROS_ERROR("delete feature tracker!");
+        // ROS_ERROR("delete feature tracker!");
+        spdlog::error("delete feature tracker!");
     }
     map<int, FeaturePerFrame> trackImage(double _cur_time, const cv::Mat &_img, const cv::Mat &_img1 = cv::Mat());
     void set_max_feature_num(int max_feature_num);

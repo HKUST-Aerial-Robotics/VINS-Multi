@@ -125,7 +125,8 @@ map<int, FeaturePerFrame> FeatureTracker::trackImage(double _cur_time, const cv:
         cv::Ptr<cv::CLAHE> clahe = cv::createCLAHE(3.0, cv::Size(8, 8));
         TicToc t_c;
         clahe->apply(_img, img_tmp);
-        ROS_DEBUG("CLAHE costs: %fms", t_c.toc());
+        // ROS_DEBUG("CLAHE costs: %fms", t_c.toc());
+        spdlog::debug("CLAHE costs: {}ms", t_c.toc());
         cur_img = img_tmp;
 
         if(stereo && !_img1.empty())
@@ -199,7 +200,8 @@ map<int, FeaturePerFrame> FeatureTracker::trackImage(double _cur_time, const cv:
         reduceVector(cur_pts, status);
         reduceVector(ids, status);
         reduceVector(track_cnt, status);
-        ROS_DEBUG("temporal optical flow costs: %fms", t_o.toc());
+        // ROS_DEBUG("temporal optical flow costs: %fms", t_o.toc());
+        spdlog::debug("temporal optical flow costs: {}ms", t_o.toc());
         // printf("track cnt %d\n", (int)ids.size());
 
         track_num = static_cast<double>(cur_pts.size());
@@ -212,12 +214,15 @@ map<int, FeaturePerFrame> FeatureTracker::trackImage(double _cur_time, const cv:
     if (1)
     {
         rejectWithF();
-        ROS_DEBUG("set mask begins");
+        // ROS_DEBUG("set mask begins");
+        spdlog::debug("set mask begins");
         TicToc t_m;
         setMask();
-        ROS_DEBUG("set mask costs %fms", t_m.toc());
+        // ROS_DEBUG("set mask costs %fms", t_m.toc());
+        spdlog::debug("set mask costs {}ms", t_m.toc());
 
-        ROS_DEBUG("detect feature begins");
+        // ROS_DEBUG("detect feature begins");
+        spdlog::debug("detect feature begins");
         TicToc t_t;
         int n_max_cnt = max_cnt - static_cast<int>(cur_pts.size());
         if (n_max_cnt > 0)
@@ -230,7 +235,8 @@ map<int, FeaturePerFrame> FeatureTracker::trackImage(double _cur_time, const cv:
         }
         else
             n_pts.clear();
-        ROS_DEBUG("detect feature %d costs: %f ms",n_max_cnt, t_t.toc());
+        // ROS_DEBUG("detect feature %d costs: %f ms",n_max_cnt, t_t.toc());
+        spdlog::debug("detect feature {} costs: {} ms",n_max_cnt, t_t.toc());
 
         for (auto &p : n_pts)
         {
@@ -869,7 +875,8 @@ void FeatureTracker::rejectWithF()
   {
     if (cur_pts.size() >= 8)
     {
-        ROS_DEBUG("FM ransac begins");
+        // ROS_DEBUG("FM ransac begins");
+        spdlog::debug("FM ransac begins");
         TicToc t_f;
         vector<cv::Point2f> un_cur_pts(cur_pts.size()), un_prev_pts(prev_pts.size());
         for (unsigned int i = 0; i < cur_pts.size(); i++)
@@ -894,8 +901,10 @@ void FeatureTracker::rejectWithF()
         reduceVector(cur_un_pts, status);
         reduceVector(ids, status);
         reduceVector(track_cnt, status);
-        ROS_DEBUG("FM ransac: %d -> %lu: %f", size_a, cur_pts.size(), 1.0 * cur_pts.size() / size_a);
-        ROS_DEBUG("FM ransac costs: %fms", t_f.toc());
+        // ROS_DEBUG("FM ransac: %d -> %lu: %f", size_a, cur_pts.size(), 1.0 * cur_pts.size() / size_a);
+        spdlog::debug("FM ransac: {} -> {}: {}", size_a, cur_pts.size(), 1.0 * cur_pts.size() / size_a);
+        // ROS_DEBUG("FM ransac costs: %fms", t_f.toc());
+        spdlog::debug("FM ransac costs: {}ms", t_f.toc());
     }
 }
 
@@ -980,12 +989,14 @@ void FeatureTracker::setDepth(const cv::Mat &depth_img){
 void FeatureTracker::readIntrinsicParameter(const vector<std::string> &calib_file)
 {
 
-    ROS_INFO("reading paramerter of camera %s", calib_file[0].c_str());
+    // ROS_INFO("reading paramerter of camera %s", calib_file[0].c_str());
+    spdlog::info("reading paramerter of camera {}", calib_file[0].c_str());
     camodocal::CameraPtr camera = CameraFactory::instance()->generateCameraFromYamlFile(calib_file[0]);
     m_camera.push_back(camera);
 
     if(stereo){
-        ROS_INFO("reading paramerter of camera %s", calib_file[1].c_str());
+        // ROS_INFO("reading paramerter of camera %s", calib_file[1].c_str());
+        spdlog::info("reading paramerter of camera {}", calib_file[1].c_str());
         camodocal::CameraPtr camera_1 = CameraFactory::instance()->generateCameraFromYamlFile(calib_file[1]);
         m_camera.push_back(camera_1);
     }

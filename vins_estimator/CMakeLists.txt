@@ -16,13 +16,14 @@ find_package(catkin REQUIRED COMPONENTS
     nav_msgs
     tf
     cv_bridge
-    camera_models
+    # camera_models
     image_transport
     nodelet
     message_filters
     sensor_msgs)
 
 find_package(OpenCV REQUIRED)
+find_package(spdlog REQUIRED)
 
 message(WARNING "OpenCV_VERSION: ${OpenCV_VERSION}")
 
@@ -79,12 +80,18 @@ include_directories(
 
 catkin_package()
 
+# add_subdirectory(${PROJECT_SOURCE_DIR}/../camera_models 
+#                  ${CMAKE_CURRENT_BINARY_DIR}/camera_models)
+
+include_directories(
+  ${PROJECT_SOURCE_DIR}/../camera_models/include
+)
 
 add_library(parameter_lib_multi SHARED
     src/estimator/parameters.cpp
 )
 target_link_libraries(parameter_lib_multi
-    ${catkin_LIBRARIES} ${OpenCV_LIBS} ${LIBDW})
+    ${OpenCV_LIBS} ${LIBDW})
 
 add_library(utility_lib_multi SHARED
     src/utility/utility.cpp
@@ -105,7 +112,7 @@ add_library(init_lib_multi SHARED
     src/initial/initial_aligment.cpp
 )
 target_link_libraries(init_lib_multi
-    ${catkin_LIBRARIES} ${LIBDW})
+    ${LIBDW})
 
 add_library(factor_lib_multi SHARED
     src/factor/pose_local_parameterization.cpp
@@ -117,7 +124,7 @@ add_library(factor_lib_multi SHARED
     src/factor/projectionOneFrameTwoCamFactor.cpp
 )
 target_link_libraries(factor_lib_multi
-    ${catkin_LIBRARIES} ${OpenCV_LIBS} ${CERES_LIBRARIES} ${LIBDW})
+    camera_models ${OpenCV_LIBS} ${CERES_LIBRARIES} ${LIBDW} ${spdlog_LIBRARIES})
 
 
 add_library(estimator_lib_multi SHARED

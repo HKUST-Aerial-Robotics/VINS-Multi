@@ -8,6 +8,7 @@
  *******************************************************/
 
 #include "parameters.h"
+#include <spdlog/spdlog.h>
 
 namespace vins_multi{
 
@@ -49,28 +50,29 @@ int EQUALIZE;
 int MAX_TRACK_NUM_PER_MODULE;
 
 
-template <typename T>
-T readParam(ros::NodeHandle &n, std::string name)
-{
-    T ans;
-    if (n.getParam(name, ans))
-    {
-        ROS_INFO_STREAM("Loaded " << name << ": " << ans);
-    }
-    else
-    {
-        ROS_ERROR_STREAM("Failed to load " << name);
-        n.shutdown();
-    }
-    return ans;
-}
+// template <typename T>
+// T readParam(ros::NodeHandle &n, std::string name)
+// {
+//     T ans;
+//     if (n.getParam(name, ans))
+//     {
+//         ROS_INFO_STREAM("Loaded " << name << ": " << ans);
+//     }
+//     else
+//     {
+//         ROS_ERROR_STREAM("Failed to load " << name);
+//         n.shutdown();
+//     }
+//     return ans;
+// }
 
 void readParameters(std::string config_file)
 {
     FILE *fh = fopen(config_file.c_str(),"r");
     if(fh == NULL){
-        ROS_WARN("config_file dosen't exist; wrong config_file path");
-        ROS_BREAK();
+        // ROS_WARN("config_file dosen't exist; wrong config_file path");
+        spdlog::error("config_file dosen't exist; wrong config_file path");
+        // ROS_BREAK();
         return;          
     }
     fclose(fh);
@@ -78,7 +80,8 @@ void readParameters(std::string config_file)
     cv::FileStorage fsSettings(config_file, cv::FileStorage::READ);
     if(!fsSettings.isOpened())
     {
-        std::cerr << "ERROR: Wrong path to settings" << std::endl;
+        // std::cerr << "ERROR: Wrong path to settings" << std::endl;
+        spdlog::error("ERROR: Wrong path to settings");
     }
 
     int pn = config_file.find_last_of('/');
@@ -93,7 +96,7 @@ void readParameters(std::string config_file)
 #ifdef WITH_CUDA
     USE_GPU = fsSettings["use_gpu"];
 #endif
-    ROS_WARN("USE_GPU: %d", USE_GPU);
+    // ROS_WARN("USE_GPU: %d", USE_GPU);
 
     ESTIMATE_EXTRINSIC = fsSettings["estimate_extrinsic"];
     ESTIMATE_TD = fsSettings["estimate_td"];
@@ -101,11 +104,13 @@ void readParameters(std::string config_file)
     cv::FileNode imu_node = fsSettings["imu"];
 
     USE_IMU = imu_node["num"];
-    ROS_WARN("USE_IMU: %d", USE_IMU);
+    // ROS_WARN("USE_IMU: %d", USE_IMU);
+    spdlog::info("USE_IMU: {}", USE_IMU);
     if(USE_IMU)
     {
         imu_node["topic"] >> IMU_MODULE.imu_topic_;
-        printf("IMU_TOPIC: %s\n", IMU_MODULE.imu_topic_.c_str());
+        // printf("IMU_TOPIC: %s\n", IMU_MODULE.imu_topic_.c_str());
+        spdlog::info("IMU_TOPIC: {}", IMU_MODULE.imu_topic_);
 
         cv::Mat cv_center_T_imu;
         imu_node["center_T_imu"] >> cv_center_T_imu;
@@ -124,15 +129,18 @@ void readParameters(std::string config_file)
     else{
         ESTIMATE_EXTRINSIC = 0;
         ESTIMATE_TD = 0;
-        printf("no imu, fix extrinsic param; no time offset calibration\n");
+        // printf("no imu, fix extrinsic param; no time offset calibration\n");
+        spdlog::info("no imu, fix extrinsic param; no time offset calibration");
     }
 
     if ( ESTIMATE_EXTRINSIC ){
-        ROS_WARN(" Optimize extrinsic param around initial guess!");
+        // ROS_WARN(" Optimize extrinsic param around initial guess!");
+        spdlog::warn(" Optimize extrinsic param around initial guess!");
         EX_CALIB_RESULT_PATH = OUTPUT_FOLDER + "/extrinsic_parameter.csv";
     }
     else{
-        ROS_WARN(" fix extrinsic param ");
+        // ROS_WARN(" fix extrinsic param ");
+        spdlog::warn(" fix extrinsic param ");
     }
 
 
@@ -161,21 +169,25 @@ void readParameters(std::string config_file)
         CAM_MODULES[cur_cam_module].td_ = (*it)["td"];
 
         if (ESTIMATE_TD){
-            ROS_INFO_STREAM("Unsynchronized sensors, online estimate time offset, initial td: " << CAM_MODULES[cur_cam_module].td_);
+            // ROS_INFO_STREAM("Unsynchronized sensors, online estimate time offset, initial td: " << CAM_MODULES[cur_cam_module].td_);
+            spdlog::info("Unsynchronized sensors, online estimate time offset, initial td: {}", CAM_MODULES[cur_cam_module].td_);
         }
         else{
-            ROS_INFO_STREAM("Synchronized sensors, fix time offset: " << CAM_MODULES[cur_cam_module].td_);
+            // ROS_INFO_STREAM("Synchronized sensors, fix time offset: " << CAM_MODULES[cur_cam_module].td_);
+            spdlog::info("Synchronized sensors, fix time offset: {}", CAM_MODULES[cur_cam_module].td_);
         }
 
         int rolling_shutter = (*it)["rolling_shutter"];
 
         if(rolling_shutter){
             CAM_MODULES[cur_cam_module].tr_ = (*it)["rolling_shutter_tr"];
-            ROS_INFO_STREAM("Rolling shutter camera, read out time per line: " << CAM_MODULES[cur_cam_module].tr_);
+            // ROS_INFO_STREAM("Rolling shutter camera, read out time per line: " << CAM_MODULES[cur_cam_module].tr_);
+            spdlog::info("Rolling shutter camera, read out time per line: {}", CAM_MODULES[cur_cam_module].tr_);
         }
         else{
             CAM_MODULES[cur_cam_module].tr_ = 0.0;
-            ROS_INFO("Global shutter camera.");
+            // ROS_INFO("Global shutter camera.");
+            spdlog::info("Global shutter camera.");
         }
          
 
@@ -207,7 +219,8 @@ void readParameters(std::string config_file)
         
     }
 
-    ROS_WARN("%d camera modules:", CAM_MODULES.size());
+    // ROS_WARN("%d camera modules:", CAM_MODULES.size());
+    spdlog::warn("{} camera modules:", CAM_MODULES.size());
     for(int i = 0; i < CAM_MODULES.size(); i++){
         cout<<"---------------------------"<<endl;
         cout<<"Cam id: "<<CAM_MODULES[i].module_id_<<endl;

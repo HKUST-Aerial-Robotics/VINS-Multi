@@ -8,6 +8,8 @@
  *******************************************************/
 
 #include "marginalization_factor.h"
+#include <spdlog/spdlog.h>
+#include <csignal>
 
 namespace vins_multi{
 
@@ -126,7 +128,7 @@ void MarginalizationInfo::preMarginalize()
         
         if(it->residuals.hasNaN()){
             std::cout<<it->residuals<<std::endl;
-            ROS_ERROR("margin has nan!");
+            // ROS_ERROR("margin has nan!");
         }
 
         std::vector<int> block_sizes = it->cost_function->parameter_block_sizes();
@@ -270,8 +272,11 @@ void MarginalizationInfo::marginalize()
         int ret = pthread_create( &tids[i], NULL, ThreadsConstructA ,(void*)&(threadsstruct[i]));
         if (ret != 0)
         {
-            ROS_WARN("pthread_create error");
-            ROS_BREAK();
+            //TODO:2025_Oct_09 decouple ROS and remain function
+            spdlog::error("pthread_create error");
+            raise(SIGTRAP);
+            // ROS_WARN("pthread_create error");
+            // ROS_BREAK();
         }
     }
     for( int i = NUM_THREADS - 1; i >= 0; i--)  
