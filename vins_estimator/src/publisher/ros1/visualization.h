@@ -23,12 +23,11 @@
 #include <geometry_msgs/PointStamped.h>
 #include <visualization_msgs/Marker.h>
 #include <tf/transform_broadcaster.h>
-#include "CameraPoseVisualization.h"
 #include <eigen3/Eigen/Dense>
-#include "../estimator/estimator.h"
-#include "../estimator/parameters.h"
 #include <fstream>
-
+#include "estimator/estimator.h"
+#include "estimator/parameters.h"
+#include "CameraPoseVisualization.h"
 
 namespace vins_multi{
 

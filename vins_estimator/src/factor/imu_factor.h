@@ -12,9 +12,9 @@
 #include <iostream>
 #include <eigen3/Eigen/Dense>
 
-#include "../utility/utility.h"
-#include "../estimator/parameters.h"
-#include "../estimator/integration_base.h"
+#include "utility/utility.h"
+#include "estimator/parameters.h"
+#include "estimator/integration_base.h"
 #include <spdlog/spdlog.h>
 
 #include <ceres/ceres.h>

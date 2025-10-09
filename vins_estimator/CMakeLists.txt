@@ -14,18 +14,18 @@ find_package(spdlog REQUIRED)
 find_package(Ceres REQUIRED)
 find_package(Eigen3)
 
-# find_package(catkin REQUIRED COMPONENTS
-#     roscpp
-#     std_msgs
-#     geometry_msgs
-#     nav_msgs
-#     tf
-#     cv_bridge
-#     # camera_models
-#     image_transport
-#     nodelet
-#     message_filters
-#     sensor_msgs)
+find_package(catkin REQUIRED COMPONENTS
+    roscpp
+    std_msgs
+    geometry_msgs
+    nav_msgs
+    tf
+    cv_bridge
+    # camera_models
+    image_transport
+    nodelet
+    message_filters
+    sensor_msgs)
 
 message(WARNING "OpenCV_VERSION: ${OpenCV_VERSION}")
 
@@ -70,7 +70,7 @@ else()
 endif()
 
 include_directories(${catkin_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${CERES_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
-
+include_directories(${PROJECT_SOURCE_DIR}/src)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 
@@ -126,21 +126,21 @@ target_link_libraries(estimator_lib_multi
     parameter_lib_multi utility_lib_multi init_lib_multi factor_lib_multi ${OpenCV_LIBS} ${CERES_LIBRARIES} ${LIBDW})
 
 
-# #ROS related
-# add_library(visualization
-#     src/utility/visualization.cpp
-#     src/utility/CameraPoseVisualization.cpp
-# )
-# target_link_libraries(visualization
-#     ${catkin_LIBRARIES} ${LIBDW})
+#ROS related
+add_library(ros1_publisher
+    src/publisher/ros1/visualization.cpp
+    src/publisher/ros1/CameraPoseVisualization.cpp
+)
+target_link_libraries(ros1_publisher
+    ${catkin_LIBRARIES} ${LIBDW})
   
-# add_library(rosnode_lib_multi SHARED
-#     src/rosNode.cpp
-# )
-# target_link_libraries(rosnode_lib_multi ${catkin_LIBRARIES} ${OpenCV_LIBS} ${LIBDW})
+add_library(rosnode_lib_multi SHARED
+    src/ros_node/ros1/rosNode.cpp
+)
+target_link_libraries(rosnode_lib_multi ${catkin_LIBRARIES} ${OpenCV_LIBS} ${LIBDW})
 
-# add_executable(${PROJECT_NAME} src/rosNodeMain.cpp)
-# target_link_libraries(${PROJECT_NAME} rosnode_lib_multi parameter_lib_multi utility_lib_multi estimator_lib_multi frontend_lib_multi init_lib_multi factor_lib_multi ${LIBDW})
+add_executable(${PROJECT_NAME} src/ros_node/ros1/rosNodeMain.cpp)
+target_link_libraries(${PROJECT_NAME} rosnode_lib_multi parameter_lib_multi utility_lib_multi estimator_lib_multi frontend_lib_multi init_lib_multi factor_lib_multi ros1_publisher ${LIBDW})
 
-# add_library(${PROJECT_NAME}_nodelet_lib src/rosNodelet.cpp)
-# target_link_libraries(${PROJECT_NAME}_nodelet_lib rosnode_lib_multi parameter_lib_multi utility_lib_multi estimator_lib_multi frontend_lib_multi init_lib_multi factor_lib_multi ${LIBDW})
+add_library(${PROJECT_NAME}_nodelet_lib src/ros_node/ros1/rosNodelet.cpp)
+target_link_libraries(${PROJECT_NAME}_nodelet_lib rosnode_lib_multi parameter_lib_multi utility_lib_multi estimator_lib_multi frontend_lib_multi init_lib_multi factor_lib_multi ${LIBDW})

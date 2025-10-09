@@ -12,9 +12,9 @@
 // #include <ros/assert.h>
 #include <ceres/ceres.h>
 #include <Eigen/Dense>
-#include "../utility/utility.h"
-#include "../utility/tic_toc.h"
-#include "../estimator/parameters.h"
+#include "utility/utility.h"
+#include "utility/tic_toc.h"
+#include "estimator/parameters.h"
 
 namespace vins_multi{
 

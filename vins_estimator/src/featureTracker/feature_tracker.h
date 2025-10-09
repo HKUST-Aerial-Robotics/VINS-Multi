@@ -33,9 +33,9 @@
 #include "camodocal/camera_models/CameraFactory.h"
 #include "camodocal/camera_models/CataCamera.h"
 #include "camodocal/camera_models/PinholeCamera.h"
-#include "../estimator/parameters.h"
-#include "../utility/tic_toc.h"
-#include "../estimator/feature_data_type.h"
+#include "estimator/parameters.h"
+#include "utility/tic_toc.h"
+#include "estimator/feature_data_type.h"
 
 using namespace std;
 using namespace camodocal;

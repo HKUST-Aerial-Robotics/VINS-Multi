@@ -6,7 +6,6 @@
  * Licensed under the GNU General Public License v3.0;
  * you may not use this file except in compliance with the License.
  *******************************************************/
-
 #include <stdio.h>
 #include <queue>
 #include <map>
@@ -16,11 +15,7 @@
 #include <opencv2/opencv.hpp>
 #include "ros/node_handle.h"
 #include "ros/subscriber.h"
-#include "utility/visualization.h"
-#include "utility/tic_toc.h"
-
 #include <boost/thread.hpp>
-
 #include <message_filters/subscriber.h>
 #include <message_filters/sync_policies/exact_time.h>
 #include <message_filters/sync_policies/approximate_time.h>
@@ -29,6 +24,8 @@
 #include <vector>
 
 #include "estimator/parameters.h"
+#include "publisher/ros1/visualization.h"
+#include "utility/tic_toc.h"
 
 using namespace std;
 
