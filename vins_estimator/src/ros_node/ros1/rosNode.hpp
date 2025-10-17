@@ -26,6 +26,7 @@
 #include "estimator/parameters.h"
 #include "publisher/ros1/visualization.h"
 #include "utility/tic_toc.h"
+#include "publisher/ros1/CallbackManager.h"
 
 using namespace std;
 
@@ -86,10 +87,9 @@ class VinsNodeBaseClass {
         vector<camera_module_info_with_sub> camera_modules_;
         vector<imu_info_with_sub> imu_modules_;
 
-
         Estimator estimator_;
-
         ros::Subscriber sub_restart_;
+        std::unique_ptr<Publisher::ROS1CallbackManager> ros1_callback_manager_;
 
     protected:
 

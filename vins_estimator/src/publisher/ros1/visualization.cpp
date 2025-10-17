@@ -81,9 +81,7 @@ void pubLatestOdometry(const Estimator &estimator)
     const Eigen::Matrix3d &center_R_imu = estimator.imu_module_.rcenterimu_;
     const Eigen::Vector3d &center_T_imu = estimator.imu_module_.tcenterimu_;
 
-    nav_msgs::Odometry odometry;
-    odometry.header.stamp = ros::Time(t);
-    odometry.header.frame_id = "world";
+
 
     Eigen::Vector3d w_T_center, v_center, a_center, omega_center;
     Eigen::Matrix3d w_R_center;
@@ -93,33 +91,29 @@ void pubLatestOdometry(const Estimator &estimator)
 
     w_T_center = Utility::lerp(last_pos, w_T_center, interpolation_alpha);
 
-    odometry.pose.pose.position.x = w_T_center.x();
-    odometry.pose.pose.position.y = w_T_center.y();
-    odometry.pose.pose.position.z = w_T_center.z();
-
     Eigen::Quaterniond q_center(w_R_center);
 
     q_center = last_q.slerp(interpolation_alpha, q_center);
 
+    omega_center = center_R_imu * omega;
+
+    v_center = center_R_imu * V - omega_center.cross(center_T_imu);
+    v_center = Utility::lerp(last_vel, v_center, interpolation_alpha);
+    omega_center = Utility::lerp(last_omega, omega_center, interpolation_alpha);
+    
+    nav_msgs::Odometry odometry;
+    odometry.header.stamp = ros::Time(t);
+    odometry.header.frame_id = "world";
+    odometry.pose.pose.position.x = w_T_center.x();
+    odometry.pose.pose.position.y = w_T_center.y();
+    odometry.pose.pose.position.z = w_T_center.z();
     odometry.pose.pose.orientation.x = q_center.x();
     odometry.pose.pose.orientation.y = q_center.y();
     odometry.pose.pose.orientation.z = q_center.z();
     odometry.pose.pose.orientation.w = q_center.w();
-
-    omega_center = center_R_imu * omega;
-
-    v_center = center_R_imu * V - omega_center.cross(center_T_imu);
-
-
-    v_center = Utility::lerp(last_vel, v_center, interpolation_alpha);
-
     odometry.twist.twist.linear.x = v_center.x();
     odometry.twist.twist.linear.y = v_center.y();
     odometry.twist.twist.linear.z = v_center.z();
-
-
-    omega_center = Utility::lerp(last_omega, omega_center, interpolation_alpha);
-
     odometry.twist.twist.angular.x = omega_center.x();
     odometry.twist.twist.angular.y = omega_center.y();
     odometry.twist.twist.angular.z = omega_center.z();
@@ -175,8 +169,7 @@ void pubTrackImage(const cv::Mat &imgTrack, const double t, const unsigned int c
     sensor_msgs::ImagePtr imgTrackMsg = cv_bridge::CvImage(header, "bgr8", imgTrack).toImageMsg();
     pub_image_track[cam_unique_id].publish(imgTrackMsg);
 }
-
-
+//TODO: This method can be estimator debug function, move it to estimator
 void printStatistics(const Estimator &estimator, double t)
 {
     if (estimator.solver_flag_ != Estimator::SolverFlag::NON_LINEAR)
@@ -346,6 +339,10 @@ void pubCameraPose(const Estimator &estimator, const unsigned int unique_id)
     }
 }
 
+// Pointloud data format
+// std::map<uint32_t, std::vector<Vector3d>>; //Keyframe features
+// std::vector<Vector3d> marginized_features;
+
 
 void pubPointCloud(const Estimator &estimator, const unsigned int unique_id)
 {
@@ -488,8 +485,6 @@ void pubKeyframe(const Estimator &estimator)
         //printf("time: %f t: %f %f %f r: %f %f %f %f\n", odometry.header.stamp.toSec(), P.x(), P.y(), P.z(), R.w(), R.x(), R.y(), R.z());
 
         pub_keyframe_pose.publish(odometry);
-
-
     }
 }
 

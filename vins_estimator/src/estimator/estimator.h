@@ -40,6 +40,7 @@
 // #include "../factor/reprojectionDepthFactor.h"
 #include "factor/projectionTwoFrameOneCamDepthFactor.h"
 #include "featureTracker/feature_tracker.h"
+#include "publisher/PublisherCallbacks.h"
 
 namespace vins_multi{
 
@@ -243,9 +244,6 @@ class Estimator
     // void constructMarginalizationInfo();
     // void constructPriorFactor(shared_ptr<ImageFrame>& frame_ptr_to_margin);
     void constructMarginalizationFator();
-
-
-
     // internal
     void clearState();
     // bool initialStructure();
@@ -257,7 +255,6 @@ class Estimator
     // void slideWindowOld();
 
     void reorderWindow();
-
     void optimization();
     void vector2double();
     void double2vector();
@@ -282,6 +279,14 @@ class Estimator
     void initFirstIMUPose(const deque<State>::iterator img_it);
 
     inline bool needMarginalization();
+
+    void collectPropogationData(Publisher::PropagateData& propagate_data);
+    void collectOptimizedData(Publisher::FullReportData& full_report_data, const int unique_id, const bool update_latest);
+
+    void setPublisherCallbacks(const Publisher::PublisherCallbacks& callbacks){
+        publisher_callbacks_ = callbacks;
+        return;
+    }
 
     enum SolverFlag
     {
@@ -398,6 +403,13 @@ class Estimator
     bool initThreadFlag_;
 
     std::vector<std::thread>image_process_thread_vec_;
+    Publisher::PublisherCallbacks publisher_callbacks_;
+
+    //publish data related temp
+    Eigen::Vector3d last_pos_ = Eigen::Vector3d::Zero();
+    Eigen::Vector3d last_vel_ = Eigen::Vector3d::Zero();
+    Eigen::Vector3d last_omega_ = Eigen::Vector3d::Zero();
+    Eigen::Quaterniond last_q_ = Eigen::Quaterniond::Identity();
 };
 
 }

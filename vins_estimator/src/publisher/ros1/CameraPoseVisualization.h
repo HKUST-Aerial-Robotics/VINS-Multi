@@ -21,9 +21,7 @@ namespace vins_multi{
 class CameraPoseVisualization {
 public:
 	std::string m_marker_ns;
-
 	CameraPoseVisualization(float r, float g, float b, float a);
-	
 	void setImageBoundaryColor(float r, float g, float b, float a=1.0);
 	void setOpticalCenterConnectorColor(float r, float g, float b, float a=1.0);
 	void setScale(double s);

@@ -9,8 +9,8 @@
 
 #pragma once
 
-#include "../utility/utility.h"
-#include "../estimator/parameters.h"
+#include "utility/utility.h"
+#include "estimator/parameters.h"
 
 #include <ceres/ceres.h>
 using namespace Eigen;

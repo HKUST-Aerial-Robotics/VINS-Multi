@@ -21,7 +21,7 @@
 
 
 #include "parameters.h"
-#include "../utility/tic_toc.h"
+#include "utility/tic_toc.h"
 #include "feature_data_type.h"
 
 using namespace std;

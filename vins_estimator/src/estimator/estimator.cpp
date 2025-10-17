@@ -289,7 +289,6 @@ void Estimator::inputImage(const unsigned int unique_id, double t, const cv::Mat
     // printf("process time: %f\n", processTime.toc());
 }
 
-
 void Estimator::inputIMU(double t, const Vector6d &imu_data)
 {
 
@@ -314,6 +313,9 @@ void Estimator::inputIMU(double t, const Vector6d &imu_data)
 
     if (solver_flag_ == NON_LINEAR)
     {
+        Publisher::PropagateData propogate_data;
+        collectPropogationData(propogate_data);
+        publisher_callbacks_.on_publish_propogate_odom_cb(propogate_data);
         #if 0
         pubLatestOdometry(*this);
         #endif
@@ -588,7 +590,6 @@ bool Estimator::CheckKeepImageUpdatePriority(const int cam_unique_id, const doub
     return true;
 }
 
-
 bool Estimator::IMUAvailable(double t)
 {   
     if(!first_imu_){
@@ -614,7 +615,6 @@ bool Estimator::IMUAvailable(double t)
 
     return available;
 }
-
 
 bool Estimator::IMUInitReady(double img_time){
     for(auto it = state_hist_.begin(); it!=state_hist_.end(); it++)
@@ -682,7 +682,6 @@ void Estimator::initFirstPose(Eigen::Vector3d p, Eigen::Matrix3d r)
     initP_ = p;
     initR_ = r;
 }
-
 
 void Estimator::constructPreintegration(const deque<State>::iterator insert_state_it, const map<double, shared_ptr<ImageFrame>>::iterator insert_frame_it){
     if(insert_frame_it == image_frame_window_.all_image_frame_ptr_.end()){
@@ -1266,7 +1265,6 @@ void Estimator::double2vector()
 
 }
 
-
 // bool Estimator::failureDetection()
 // {
 //     return false;
@@ -1553,7 +1551,6 @@ void Estimator::optimization()
     double2vector();
 }
 
-
 void Estimator::constructMarginalizationFator(){
 
     TicToc t_whole_marginalization;
@@ -1803,7 +1800,6 @@ void Estimator::constructMarginalizationFator(){
 
 }
 
-
 void Estimator::slideWindow(const int img_cam_unique_id){
 
     if(marginalization_flag_ == MARGIN_OLD){
@@ -1924,7 +1920,6 @@ void Estimator::reorderWindow(){
 
 }
 
-
 void Estimator::getPoseInWorldFrame(const int unique_id, Eigen::Matrix4d &T)
 {
     T = Eigen::Matrix4d::Identity();
@@ -1980,7 +1975,6 @@ void Estimator::predictPtsInNextFrame(const int unique_id)
     img_trackers_[unique_id]->featureTracker_.setPrediction(predictPts);
     //printf("estimator output %d predict pts\n",(int)predictPts.size());
 }
-
 
 void Estimator::propagateIMU(const State& x, State& x_next)
 {
@@ -2073,6 +2067,15 @@ void Estimator::updateLatestStates(const int unique_id)
     //     printf("td %d: %lf\n", i, img_trackers_[i]->cam_info_.td_);
     //     printf("cam %d frame cnt: %d\n", i, image_frame_window_.cam_wise_image_frame_ptr_[i].size());
     // }
+    bool update_latest = false;
+    if(image_frame->t_ > latest_image_time_){
+        latest_image_time_ = image_frame->t_;
+        update_latest = true;
+    }
+    Publisher::FullReportData full_report_data;
+    collectOptimizedData(full_report_data, unique_id, update_latest);
+    publisher_callbacks_.on_publish_full_report_cb(full_report_data);
+
     #if 0
     std_msgs::Header header;
     header.frame_id = "world";
@@ -2094,4 +2097,139 @@ void Estimator::updateLatestStates(const int unique_id)
     // printStatistics(*this, 0);
 }
 
+void Estimator::collectPropogationData(Publisher::PropagateData& data){
+    static const double interpolation_alpha = 0.5;
+    const double t = this->state_hist_.back().t_;
+    const Eigen::Vector3d& P = this->state_hist_.back().P_lpf_;    
+    const Eigen::Quaterniond &R= this->state_hist_.back().Q_lpf_;
+    const Eigen::Vector3d &V = this->state_hist_.back().V_lpf_;
+    const Eigen::Vector3d &omega =  this->state_hist_.back().un_gyr_;
+    const Eigen::Matrix3d &center_R_imu = this->imu_module_.rcenterimu_;
+    const Eigen::Vector3d &center_T_imu = this->imu_module_.tcenterimu_;
+    Eigen::Vector3d w_T_center, v_center, a_center, omega_center;
+    Eigen::Matrix3d w_R_center;
+    w_R_center = R * center_R_imu;
+    w_T_center = P - w_R_center * center_T_imu;
+    w_T_center = Utility::lerp(last_pos_, w_T_center, interpolation_alpha);
+    Eigen::Quaterniond q_center(w_R_center);
+    q_center = last_q_.slerp(interpolation_alpha, q_center);
+    omega_center = center_R_imu * omega;
+    v_center = center_R_imu * V - omega_center.cross(center_T_imu);
+    v_center = Utility::lerp(last_vel_, v_center, interpolation_alpha);
+    omega_center = Utility::lerp(last_omega_, omega_center, interpolation_alpha);
+    data.timestamp = t;
+    data.position = w_T_center;
+    data.orientation = q_center;
+    data.velocity = v_center;
+    data.angular_velocity = omega_center;
+    for(unsigned int i = 0; i < img_trackers_.size(); i++){
+        Vector3d P_l_cam = P + R * img_trackers_[i]->cam_info_.tic_[0];
+        Quaterniond R_l_cam = Quaterniond(R * img_trackers_[i]->cam_info_.ric_[0]);
+        std::vector<Vector3d> camera_pose;
+        std::vector<Quaterniond> camera_ori;
+        camera_pose.push_back(P_l_cam);
+        camera_ori.push_back(R_l_cam);
+        if(img_trackers_[i]->cam_info_.stereo_){
+            Vector3d P_r_cam = P + R * img_trackers_[i]->cam_info_.tic_[1];
+            Quaterniond R_r_cam = Quaterniond(R * img_trackers_[i]->cam_info_.ric_[1]);
+            camera_pose.push_back(P_r_cam);
+            camera_ori.push_back(R_r_cam);  
+        }
+        data.camera_poses.push_back(Publisher::CamerasPose{camera_pose, camera_ori});
+    }
+    return;
+}
+
+void Estimator::collectOptimizedData(Publisher::FullReportData& data, const int unique_id, const bool update_latest){
+//camera pose
+    auto& frame_ptr = this->image_frame_window_.cam_wise_image_frame_ptr_[unique_id].back();
+    double camera_time = frame_ptr->t_;
+    Vector3d P = frame_ptr->T_ + frame_ptr->R_ * this->img_trackers_[unique_id]->cam_info_.tic_[0];
+    Quaterniond R = frame_ptr->R_ * this->img_trackers_[unique_id]->cam_info_.ric_[0];
+    data.camera_time = camera_time;
+    data.camera_id = unique_id;
+    data.camera_pose = Publisher::Pose{P, R};
+
+
+//collect pointcloud
+    double report_time = this->image_frame_window_.all_image_frame_ptr_.rbegin()->second->t_;
+    data.timestamp = report_time;
+    for (auto &it_per_id : img_trackers_[unique_id]->f_manager_.feature_)
+    {
+        int used_num =0;
+        used_num = it_per_id.second.feature_per_frame.size();
+        if (used_num < 2 || it_per_id.second.solve_flag == FeaturePerId::UNINITIALIZED || 
+            it_per_id.second.solve_flag== FeaturePerId::OUTLIER){
+            continue;
+        }
+        int imu_i = it_per_id.second.start_frame;
+        Vector3d pts_i = it_per_id.second.feature_per_frame.front().point * it_per_id.second.estimated_depth;
+        Vector3d w_pts_i = this->image_frame_window_.cam_wise_image_frame_ptr_[unique_id][imu_i]->R_ * (this->img_trackers_[unique_id]->cam_info_.ric_[0] * pts_i
+             + this->img_trackers_[unique_id]->cam_info_.tic_[0]) + this->image_frame_window_.cam_wise_image_frame_ptr_[unique_id][imu_i]->T_;
+        data.in_window_pointcloud.push_back(w_pts_i);
+    }
+//collect margin pointcloud
+    auto& margin_frame_ptr = this->image_frame_window_.all_image_frame_ptr_.begin()->second;
+    int margin_cam_unique_id = margin_frame_ptr->cam_module_unique_id_;
+
+    for (auto &it_per_id : img_trackers_[margin_cam_unique_id]->f_manager_.feature_)
+    {
+        int used_num =0;
+        used_num = it_per_id.second.feature_per_frame.size();
+        if (used_num < 2 ){
+            continue;
+        }
+        if (it_per_id.second.start_frame == 0 && it_per_id.second.feature_per_frame.size() <= 2 
+            && it_per_id.second.solve_flag == FeaturePerId::ESTIMATED){
+            int imu_i = it_per_id.second.start_frame;
+            Vector3d pts_i = it_per_id.second.feature_per_frame.front().point * it_per_id.second.estimated_depth;
+            Vector3d w_pts_i = this->image_frame_window_.cam_wise_image_frame_ptr_[margin_cam_unique_id][imu_i]->R_ * (this->img_trackers_[margin_cam_unique_id]->cam_info_.ric_[0] * pts_i 
+                + this->img_trackers_[margin_cam_unique_id]->cam_info_.tic_[0]) + this->image_frame_window_.cam_wise_image_frame_ptr_[margin_cam_unique_id][imu_i]->T_;
+            data.marginized_pointcloud.push_back(w_pts_i);
+        }
+    }
+    
+    data.update_latest = update_latest;
+
+    if (update_latest){
+        if (solver_flag_ != Estimator::SolverFlag::NON_LINEAR ){
+            data.optimized_valid = false;
+        } else {
+            double time_stamp = image_frame_window_.all_image_frame_ptr_.rbegin()->second->t_;
+            data.optimized_valid = true;
+            Vector3d tf_correct_t;
+            Quaterniond tf_correct_q;
+            //collect TF
+            tf_correct_t = image_frame_window_.all_image_frame_ptr_.rbegin()->second->T_;
+            tf_correct_q = image_frame_window_.all_image_frame_ptr_.rbegin()->second->R_;
+            data.TF_correct_pose = Publisher::Pose{tf_correct_t, tf_correct_q};
+        }
+        // Collect Odometry
+        Quaterniond tmp_Q (this->image_frame_window_.all_image_frame_ptr_.rbegin()->second->R_);
+        Vector3d tmp_P = this->image_frame_window_.all_image_frame_ptr_.rbegin()->second->T_;
+        Vector3d tmp_V = this->image_frame_window_.all_image_frame_ptr_.rbegin()->second->V_;
+        data.latest_frame_pose.orientation = tmp_Q;
+        data.latest_frame_pose.position = tmp_P;
+        data.latest_frame_pose.velocity = tmp_V;
+        // collect keypose
+        for (int i =0 ; i < this->key_poses_.size(); i++){
+            Vector3d key_p = this->key_poses_[i];
+            data.key_poses.push_back(key_p);
+        }
+        // collect keyframe
+        if (this->marginalization_flag_ == MARGIN_OLD) {
+            data.have_keyframe = true;
+            auto p = image_frame_window_.all_image_frame_ptr_.rbegin()->second->T_;
+            auto q = image_frame_window_.all_image_frame_ptr_.rbegin()->second->R_;
+            data.keyframe_pose = Publisher::Pose{p, q};
+        }
+        //collect camera extrinsics
+        for (unsigned int i = 0; i < img_trackers_.size(); i++){
+            Vector3d ex_t = img_trackers_[i]->cam_info_.tic_[0];
+            Quaterniond ex_q (img_trackers_[i]->cam_info_.ric_[0]);
+            data.pub_camera_extrinsic_params.push_back(Publisher::Pose{ex_t, ex_q});
+        }
+    }
+    return; 
+}
 }

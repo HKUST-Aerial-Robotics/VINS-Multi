@@ -205,6 +205,25 @@ void VinsNodeBaseClass::Init(ros::NodeHandle & n)
     ROS_WARN("set module finish");
     registerPub(n);
     estimator_.setParameter();
+    ros1_callback_manager_ = std::make_unique<Publisher::ROS1CallbackManager>(n);
+
+    estimator_.publisher_callbacks_.on_publish_propogate_odom_cb =
+        [this](const Publisher::PropagateData &data)
+        {
+            ros1_callback_manager_->publish_propagate_cb(data);
+        };
+
+    estimator_.publisher_callbacks_.publish_track_image_cb =
+        [this](const Publisher::TrackImageData &data)
+        {
+            ros1_callback_manager_->publish_track_image_cb(data);
+        };
+
+    estimator_.publisher_callbacks_.on_publish_full_report_cb =
+        [this](const Publisher::FullReportData &data)
+        {
+            ros1_callback_manager_->publish_full_report_cb(data);
+        };
     ROS_WARN("set estimator finish");
 
 #ifdef EIGEN_DONT_PARALLELIZE

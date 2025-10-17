@@ -33,7 +33,7 @@ namespace vins_multi{
 
 void registerPub(ros::NodeHandle &n);
 
-void pubLatestOdometry(const Estimator &estimator);
+void pubLatestOdometry(const Estimator &estimator); //publishe IMU propogate odometry
 
 void pubTrackImage(const cv::Mat &imgTrack, const double t, const unsigned int cam_unique_id);
 

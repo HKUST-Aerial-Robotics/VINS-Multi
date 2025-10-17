@@ -130,6 +130,7 @@ target_link_libraries(estimator_lib_multi
 add_library(ros1_publisher
     src/publisher/ros1/visualization.cpp
     src/publisher/ros1/CameraPoseVisualization.cpp
+    src/publisher/ros1/CallbackManager.cpp
 )
 target_link_libraries(ros1_publisher
     ${catkin_LIBRARIES} ${LIBDW})
