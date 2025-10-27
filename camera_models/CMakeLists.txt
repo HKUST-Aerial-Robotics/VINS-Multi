@@ -28,7 +28,7 @@ add_library(camera_models SHARED
   src/camera_models/ScaramuzzaCamera.cc
   src/sparse_graph/Transform.cc
   src/gpl/gpl.cc
-  src/gpl/EigenQuaternionParameterization.cc
+  # src/gpl/EigenQuaternionParameterization.cc
 )
 
 target_link_libraries(camera_models

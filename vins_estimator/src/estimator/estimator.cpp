@@ -1327,7 +1327,7 @@ void Estimator::optimization()
     //ceres::LossFunction* loss_function = new ceres::HuberLoss(1.0);
 
     for(auto frame_it = image_frame_window_.all_image_frame_ptr_.begin(); frame_it != image_frame_window_.all_image_frame_ptr_.end(); frame_it++){
-        ceres::LocalParameterization *local_parameterization = new PoseLocalParameterization();
+        ceres::Manifold *local_parameterization = new PoseManifold();
         problem_ptr_->AddParameterBlock(frame_it->second->para_Pose_, SIZE_POSE, local_parameterization);
         if(USE_IMU)
             problem_ptr_->AddParameterBlock(frame_it->second->para_SpeedBias_, SIZE_SPEEDBIAS);
@@ -1351,7 +1351,7 @@ void Estimator::optimization()
 
     for (unsigned int cam_unique_id = 0; cam_unique_id < img_trackers_.size(); cam_unique_id++)
     {
-        ceres::LocalParameterization *local_parameterization = new PoseLocalParameterization();
+        ceres::Manifold *local_parameterization = new PoseManifold();
 
         auto& para_Ex_Pose = img_trackers_[cam_unique_id]->cam_info_.para_Ex_Pose_;
         auto& para_Td = img_trackers_[cam_unique_id]->cam_info_.td_;

@@ -16,8 +16,8 @@
 #include <ceres/ceres.h>
 #include <unordered_map>
 
-#include "../utility/utility.h"
-#include "../utility/tic_toc.h"
+#include "utility/utility.h"
+#include "utility/tic_toc.h"
 
 namespace vins_multi{
 

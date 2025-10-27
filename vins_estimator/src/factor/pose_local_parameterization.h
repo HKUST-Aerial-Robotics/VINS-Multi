@@ -11,7 +11,7 @@
 
 #include <eigen3/Eigen/Dense>
 #include <ceres/ceres.h>
-#include "../utility/utility.h"
+#include "utility/utility.h"
 
 namespace vins_multi{
 

@@ -106,7 +106,8 @@ target_link_libraries(init_lib_multi
     ${LIBDW})
 
 add_library(factor_lib_multi SHARED
-    src/factor/pose_local_parameterization.cpp
+    # src/factor/pose_local_parameterization.cpp
+    src/factor/pose_manifold.cpp
     src/factor/projectionTwoFrameOneCamFactor.cpp
     src/factor/depthFactor.cpp
     src/factor/projectionTwoFrameOneCamDepthFactor.cpp
