@@ -195,6 +195,7 @@ void VinsNodeBaseClass::imu_info_with_sub::imu_callback(const sensor_msgs::ImuCo
 
 void VinsNodeBaseClass::Init(ros::NodeHandle & n)
 {
+    ros::NodeHandle nh;  // namespace handle (e.g. /vins_multi)
 
     std::string config_file;
     n.getParam("config_file", config_file);
@@ -203,9 +204,9 @@ void VinsNodeBaseClass::Init(ros::NodeHandle & n)
     readParameters(config_file);
     set_modules();
     ROS_WARN("set module finish");
-    registerPub(n);
+    registerPub(nh);
     estimator_.setParameter();
-    ros1_callback_manager_ = std::make_unique<Publisher::ROS1CallbackManager>(n);
+    ros1_callback_manager_ = std::make_unique<Publisher::ROS1CallbackManager>(nh);
 
     estimator_.publisher_callbacks_.on_publish_propogate_odom_cb =
         [this](const Publisher::PropagateData &data)
@@ -232,7 +233,7 @@ void VinsNodeBaseClass::Init(ros::NodeHandle & n)
 
     ROS_WARN("waiting for image and imu...");
 
-    registerSub(n);
+    registerSub(nh);
 
     estimator_.start_process_thread();
 
