@@ -1,0 +1,16 @@
+build/
+devel/
+install/
+log/
+ros1/build/
+ros1/devel/
+ros1/install/
+ros1/log/
+build_ros2/
+install_ros2/
+log_ros2/
+core/build/
+core/install/
+ros2/build_ros2/
+ros2/install_ros2/
+ros2/log_ros2/

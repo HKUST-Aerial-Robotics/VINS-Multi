@@ -1,0 +1,163 @@
+%YAML:1.0
+
+use_gpu: 0
+#common parameters
+#support: 1 imu 1 cam; 1 imu 2 cam: 2 cam; 
+output_path: "/home/nx/workspaces/catkin_ws/output"
+
+imu:
+    num: 1
+    topic: "/mavros/imu/data_raw"
+    #imu parameters       The more accurate parameters you provide, the better performance
+    acc_n: 0.2          # accelerometer measurement noise standard deviation. #0.2   0.04
+    gyr_n: 0.05         # gyroscope measurement noise standard deviation.     #0.05  0.004
+    acc_w: 0.01         # accelerometer bias random work noise standard deviation.  #0.002
+    gyr_w: 0.004       # gyroscope bias random work noise standard deviation.     #4.0e-5
+    g_norm: 9.80         # gravity magnitude
+
+    center_T_imu: !!opencv-matrix
+        rows: 4
+        cols: 4
+        dt: d
+        data: [ 1.0, 0.0,
+            0.0, -2.0e-02,
+            0.0, 1.0,
+            0.0, 0.0e-02,
+            0.0, 0.0,
+            1.0, 1.0e-02, 0.0, 0.0, 0.0, 1.0 ]
+
+cam_module:
+    num: 3
+    modules:
+      - cam_id: 551
+        depth: 1
+        stereo: 0
+        image_width: 640
+        image_height: 480
+        image0_topic: "/camera1/color/image_raw"
+        image1_topic: "/camera1/aligned_depth_to_color/image_raw"
+        cam0_calib: "0551_480p_camera_calib.yaml"
+        cam1_calib: "right.yaml"
+        td: 0.015                             # initial value of time offset. unit: s. readed image clock + td = real image clock (IMU clock)
+        rolling_shutter: 1                      # 0: global shutter camera, 1: rolling shutter camera
+        rolling_shutter_tr: 0.03333               # unit: s. rolling shutter read out time per frame (from data sheet). 
+
+        imu_T_cam0: !!opencv-matrix
+            rows: 4
+            cols: 4
+            dt: d
+            data: [ -6.2808897687528287e-02, -2.8288204289201400e-03,
+                9.9802156296658184e-01, 9.9190815643999171e-02,
+                -2.9479336054914120e-02, -9.9955439454256156e-01,
+                -4.6884001978471689e-03, 9.6933771765262540e-03,
+                9.9759010175374097e-01, -2.9715486293087266e-02,
+                6.2697517951879722e-02, 5.9663428958918324e-03, 0., 0., 0., 1. ]         
+        
+        imu_T_cam1: !!opencv-matrix
+            rows: 4
+            cols: 4
+            dt: d
+            data: [ -1.0021770212322867e-03, 3.6313480322730518e-04,
+                9.9999943188700535e-01, 1.5285779565991807e-02,
+                -9.9999216342926500e-01, -3.8303422615924010e-03,
+                -1.0007788055728661e-03, -5.2435791444330505e-02,
+                3.8299766679101843e-03, -9.9999259827824449e-01,
+                3.6697063849344680e-04, 8.6931302450199057e-03, 0., 0., 0., 1. ]
+
+      - cam_id: 481
+        depth: 0
+        stereo: 1
+        image_width: 848
+        image_height: 480
+        image0_topic: "/camera435/infra1/image_rect_raw"
+        image1_topic: "/camera435/infra2/image_rect_raw"
+        cam0_calib: "0481_480p_camera_calib.yaml"
+        cam1_calib: "0481_480p_camera_calib.yaml"
+        td: -0.000                             # initial value of time offset. unit: s. readed image clock + td = real image clock (IMU clock)
+        rolling_shutter: 1                      # 0: global shutter camera, 1: rolling shutter camera
+        rolling_shutter_tr: 0.03333               # unit: s. rolling shutter read out time per frame (from data sheet).
+
+        imu_T_cam0: !!opencv-matrix
+            rows: 4
+            cols: 4
+            dt: d
+            data: [  0,  -1,  0,  0,
+                    1,  0,  0,  -0.025,
+                     0,  0,  1,  0.03,
+                     0,  0,  0,  1 ]
+
+        imu_T_cam1: !!opencv-matrix
+            rows: 4
+            cols: 4
+            dt: d
+            data: [  0,  -1,  0,  0,
+                    1,  0,  0,  0.025,
+                     0,  0,  1,  0.03,
+                     0,  0,  0,  1 ]
+
+      - cam_id: 1039
+        depth: 1
+        stereo: 0
+        image_width: 640
+        image_height: 480
+        image0_topic: "/camera3/color/image_raw"
+        image1_topic: "/camera3/aligned_depth_to_color/image_raw"
+        cam0_calib: "1039_480p_camera_calib.yaml"
+        cam1_calib: "right1.yaml"
+        td: 0.015                             # initial value of time offset. unit: s. readed image clock + td = real image clock (IMU clock)
+        rolling_shutter: 1                      # 0: global shutter camera, 1: rolling shutter camera
+        rolling_shutter_tr: 0.03333               # unit: s. rolling shutter read out time per frame (from data sheet). 
+
+        imu_T_cam0: !!opencv-matrix
+            rows: 4
+            cols: 4
+            dt: d
+            data: [ 9.9991641582930035e-01, -5.0815285507388088e-03,
+                1.1888625768932126e-02, 6.0879836639510346e-02,
+                -4.6896906571882568e-03, -9.9945231238558307e-01,
+                -3.2757931385404088e-02, 1.3680113485164757e-02,
+                1.2048574879444118e-02, 3.2699439363680041e-02,
+                -9.9939260478986713e-01, -4.0997369314525207e-02, 0., 0., 0., 1. ]
+        
+        imu_T_cam1: !!opencv-matrix
+            rows: 4
+            cols: 4
+            dt: d
+            data: [ -1.0021770212322867e-03, 3.6313480322730518e-04,
+                9.9999943188700535e-01, 1.5285779565991807e-02,
+                -9.9999216342926500e-01, -3.8303422615924010e-03,
+                -1.0007788055728661e-03, -5.2435791444330505e-02,
+                3.8299766679101843e-03, -9.9999259827824449e-01,
+                3.6697063849344680e-04, 8.6931302450199057e-03, 0., 0., 0., 1. ]
+
+# Extrinsic parameter between IMU and Camera.
+estimate_extrinsic: 1   # 0  Have an accurate extrinsic parameters. We will trust the following imu^R_cam, imu^T_cam, don't change it.
+                        # 1  Have an initial guess about extrinsic parameters. We will optimize around your initial guess.
+
+
+#Multiple thread support
+multiple_thread: 0
+
+#feature traker paprameters
+max_cnt: 250            # max feature number in feature tracking
+min_dist: 40            # min distance between two features 
+freq: 15                # frequence (Hz) of publish tracking result. At least 10Hz for good estimation. If set 0, the frequence will be same as raw image 
+depth_min: 0.2
+depth_max: 9.0
+F_threshold: 1.0        # ransac threshold (pixel)
+show_track: 0           # publish tracking image as topic
+flow_back: 1            # perform forward and backward optical flow to improve feature tracking accuracy
+equalize: 1             # if image is too dark or light, trun on equalize to find enough features
+
+#optimization parameters
+max_solver_time: 0.06  # max solver itration time (s), to guarantee real time
+max_num_iterations: 12   # max solver itrations, to guarantee real time
+keyframe_parallax: 10.0 # keyframe selection threshold (pixel)
+
+#unsynchronization parameters
+estimate_td: 0                      # online estimate time offset between camera and imu
+
+#loop closure parameters
+load_previous_pose_graph: 0        # load and reuse previous pose graph; load from 'pose_graph_save_path'
+pose_graph_save_path: "/home/dji/output/pose_graph/" # save and load path
+save_image: 0                   # save image in pose graph for visualization prupose; you can close this function by setting 0 

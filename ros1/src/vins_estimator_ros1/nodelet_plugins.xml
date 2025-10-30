@@ -1,0 +1,8 @@
+<library path="lib/libvins_estimator_ros1_nodelet">
+    <class name="vins_estimator_ros1/VinsNodeletClass" type="vins_estimator_ros1::VinsNodeletClass" base_class_type="nodelet::Nodelet">
+
+        <description>
+            Nodelet version of VINS-Fusion for high IO throughput
+        </description>
+    </class>
+</library>
