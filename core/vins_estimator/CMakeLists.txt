@@ -16,6 +16,7 @@ if(NOT TARGET camera_models::camera_models)
   find_package(camera_models CONFIG REQUIRED)
 endif()
 find_package(OpenCV REQUIRED)
+
 find_package(spdlog REQUIRED)
 find_package(Ceres REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -73,13 +74,13 @@ target_include_directories(vins_estimator
     ${OpenCV_INCLUDE_DIRS}
 )
 
-if(TARGET spdlog::spdlog_header_only)
-  set(_vins_spdlog_target spdlog::spdlog_header_only)
-elseif(TARGET spdlog::spdlog)
-  set(_vins_spdlog_target spdlog::spdlog)
-else()
-  message(FATAL_ERROR "spdlog target not found after find_package")
-endif()
+# if(TARGET spdlog::spdlog_header_only)
+#   set(_vins_spdlog_target spdlog::spdlog_header_only)
+# elseif(TARGET spdlog::spdlog)
+#   set(_vins_spdlog_target spdlog::spdlog)
+# else()
+#   message(FATAL_ERROR "spdlog target not found after find_package")
+# endif()
 
 target_link_libraries(vins_estimator
   PUBLIC
@@ -87,7 +88,7 @@ target_link_libraries(vins_estimator
     ${OpenCV_LIBS}
     Ceres::ceres
     Eigen3::Eigen
-    ${_vins_spdlog_target}
+    spdlog::spdlog
 )
 
 if(LIBDW)

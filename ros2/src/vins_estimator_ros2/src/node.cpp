@@ -2,12 +2,15 @@
 
 #include <chrono>
 #include <functional>
+#include <memory>
 #include <utility>
 
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/imgproc.hpp>
 #include <sensor_msgs/image_encodings.hpp>
 #include <rmw/qos_profiles.h>
+
+#include <ament_index_cpp/get_package_share_directory.hpp>
 
 #include "estimator/parameters.h"
 #include "utility/tic_toc.h"
@@ -26,13 +29,15 @@ cv::Mat convert_color(const cv::Mat & image, int code) {
 }
 }  // namespace
 
-VinsEstimatorNode::VinsEstimatorNode()
-: rclcpp::Node("vins_estimator_ros2") {
+VinsEstimatorNode::VinsEstimatorNode(const rclcpp::NodeOptions & options)
+: rclcpp::Node("vins_estimator_ros2", options) {
+  auto node_shared = std::shared_ptr<rclcpp::Node>(this, [](rclcpp::Node *) {});
+  callback_manager_ = std::make_shared<CallbackManager>(node_shared);
+
   load_parameters();
 
   estimator_.setParameter();
 
-  callback_manager_ = std::make_shared<CallbackManager>(shared_from_this());
   estimator_.publisher_callbacks_.on_publish_propogate_odom_cb =
     [this](const Publisher::PropagateData & data) {
       callback_manager_->publish_propagate_cb(data);
@@ -51,9 +56,21 @@ VinsEstimatorNode::VinsEstimatorNode()
   RCLCPP_INFO(this->get_logger(), "vins_estimator_ros2 initialized, waiting for data...");
 }
 
+VinsEstimatorNode::~VinsEstimatorNode() {
+  estimator_.stop_process_thread();
+}
+
 void VinsEstimatorNode::load_parameters() {
-  const std::string config_file =
-    this->declare_parameter<std::string>("config_file", "");
+  std::string default_config;
+  try {
+    const auto share_dir = ament_index_cpp::get_package_share_directory("vins_estimator_ros2");
+    default_config = share_dir + std::string("/config/multi_rs_color/multi_l515_d435_color.yaml");
+  } catch (const std::exception & e) {
+    RCLCPP_WARN(this->get_logger(), "Failed to resolve default config path: %s", e.what());
+  }
+
+  const auto config_file =
+    this->declare_parameter<std::string>("config_file", default_config);
   if (config_file.empty()) {
     RCLCPP_FATAL(this->get_logger(), "config_file parameter is required");
     throw std::runtime_error("config_file not set");
@@ -79,11 +96,9 @@ void VinsEstimatorNode::setup_subscribers() {
     cam->module_info = vins_multi::CAM_MODULES[i];
 
     const auto & module = cam->module_info;
-    auto node_ptr = this->shared_from_this();
-
     if (module.depth_ || module.stereo_) {
-      cam->img0_sub.subscribe(node_ptr, module.img_topic_[0], rmw_qos_profile_sensor_data);
-      cam->img1_sub.subscribe(node_ptr, module.img_topic_[1], rmw_qos_profile_sensor_data);
+      cam->img0_sub.subscribe(this, module.img_topic_[0], rmw_qos_profile_sensor_data);
+      cam->img1_sub.subscribe(this, module.img_topic_[1], rmw_qos_profile_sensor_data);
       cam->sync = std::make_shared<message_filters::Synchronizer<CameraSubscribers::SyncPolicy>>(
         CameraSubscribers::SyncPolicy(20), cam->img0_sub, cam->img1_sub);
       cam->sync->registerCallback(

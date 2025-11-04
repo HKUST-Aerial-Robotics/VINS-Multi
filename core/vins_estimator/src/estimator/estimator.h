@@ -9,6 +9,7 @@
 
 #pragma once
  
+#include <atomic>
 #include <thread>
 #include <chrono>
 // #include <std_msgs/Header.h>
@@ -215,6 +216,7 @@ class Estimator
     static void initTrackerGPU(shared_ptr<imgTracker> img_tracker);
 
     void start_process_thread();
+    void stop_process_thread();
 
     // interface
     void initFirstPose(Eigen::Vector3d p, Eigen::Matrix3d r);
@@ -403,7 +405,8 @@ class Estimator
     bool initFirstPoseFlag_;
     bool initThreadFlag_;
 
-    std::vector<std::thread>image_process_thread_vec_;
+    std::vector<std::thread> image_process_thread_vec_;
+    std::atomic<bool> processing_threads_running_{false};
     Publisher::PublisherCallbacks publisher_callbacks_;
 
     //publish data related temp

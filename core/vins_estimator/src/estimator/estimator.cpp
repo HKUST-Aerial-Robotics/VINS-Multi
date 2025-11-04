@@ -22,16 +22,13 @@ Estimator::Estimator()
     spdlog::info("init estimator");
     initThreadFlag_ = false;
     last_marginalization_info_ = nullptr;
+    processing_threads_running_.store(false);
     clearState();
 }
 
 Estimator::~Estimator()
 {
-    if (MULTIPLE_THREAD)
-    {
-        // processThread_.join();
-        // printf("join thread \n");
-    }
+    stop_process_thread();
 }
 
 void Estimator::clearState()
@@ -124,9 +121,25 @@ void Estimator::setParameter()
 }
 
 void Estimator::start_process_thread(){
-    for(unsigned int unique_id = 0; unique_id < img_trackers_.size(); unique_id++){
+    stop_process_thread();
+    if (img_trackers_.empty()) {
+        return;
+    }
+    processing_threads_running_.store(true);
+    image_process_thread_vec_.reserve(img_trackers_.size());
+    for (unsigned int unique_id = 0; unique_id < img_trackers_.size(); unique_id++) {
         image_process_thread_vec_.emplace_back(&Estimator::processImageBuffer, this, unique_id);
     }
+}
+
+void Estimator::stop_process_thread() {
+    processing_threads_running_.store(false);
+    for (auto & thread : image_process_thread_vec_) {
+        if (thread.joinable()) {
+            thread.join();
+        }
+    }
+    image_process_thread_vec_.clear();
 }
 
 #ifdef WITH_CUDA
@@ -158,7 +171,7 @@ void Estimator::processImageBuffer(const unsigned int unique_id){
     std::chrono::time_point<std::chrono::system_clock> start_time;
     std::chrono::duration<double> process_buffer_time;
 
-    while(1){
+    while(processing_threads_running_.load()){
 
         start_time = std::chrono::system_clock::now();
 

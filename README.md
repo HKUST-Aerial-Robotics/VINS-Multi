@@ -59,6 +59,11 @@ colcon build \
   --cmake-args -DCMAKE_PREFIX_PATH="$(pwd)/../core/install"
 ```
 
+```
+colcon build --base-paths src --packages-select vins_estimator_ros2 --build-base build_ros2 --install-base install_ros2 --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_PREFIX_PATH="$(pwd)/../core/install"  -DCMAKE_CXX_FLAGS="-O0 -g3"
+
+```
+
 Launch example:
 
 ```bash

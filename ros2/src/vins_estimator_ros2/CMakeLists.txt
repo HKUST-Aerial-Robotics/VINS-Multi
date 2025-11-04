@@ -12,12 +12,14 @@ find_package(nav_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
+find_package(rclcpp_components REQUIRED)
 find_package(message_filters REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(vins_estimator CONFIG REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 
 set(THIS_PACKAGE_INCLUDE_DEPENDS
   rclcpp
@@ -29,34 +31,36 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
   message_filters
   tf2_ros
   cv_bridge
+  rclcpp_components
+  ament_index_cpp
 )
 
 add_library(vins_estimator_ros2_core
-  src/callback_manager.cpp
-  src/camera_pose_visualization.cpp
-  src/node.cpp
+ src/callback_manager.cpp
+ src/camera_pose_visualization.cpp
+ src/node.cpp
 )
 target_include_directories(vins_estimator_ros2_core
-  PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-  PRIVATE
-    ${OpenCV_INCLUDE_DIRS}
+ PUBLIC
+   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+   $<INSTALL_INTERFACE:include>
+ PRIVATE
+   ${OpenCV_INCLUDE_DIRS}
 )
 target_link_libraries(vins_estimator_ros2_core
-  vins_estimator::vins_estimator
-  ${OpenCV_LIBS}
-  Eigen3::Eigen
+ vins_estimator::vins_estimator
+ ${OpenCV_LIBS}
+ Eigen3::Eigen
 )
 ament_target_dependencies(vins_estimator_ros2_core
-  ${THIS_PACKAGE_INCLUDE_DEPENDS}
+ ${THIS_PACKAGE_INCLUDE_DEPENDS}
 )
 
 add_executable(vins_estimator_ros2_node
   src/main.cpp
 )
 target_link_libraries(vins_estimator_ros2_node
-  vins_estimator_ros2_core
+ vins_estimator_ros2_core
 )
 ament_target_dependencies(vins_estimator_ros2_node
   ${THIS_PACKAGE_INCLUDE_DEPENDS}

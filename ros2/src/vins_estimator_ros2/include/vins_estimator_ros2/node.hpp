@@ -3,9 +3,11 @@
 #include <memory>
 #include <vector>
 
-#include <message_filters/subscriber.h>
+#include <memory>
+
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/sync_policies/exact_time.h>
+#include <message_filters/subscriber.h>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/imu.hpp>
@@ -18,7 +20,8 @@ namespace vins_estimator_ros2 {
 
 class VinsEstimatorNode : public rclcpp::Node {
 public:
-  VinsEstimatorNode();
+  explicit VinsEstimatorNode(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
+  ~VinsEstimatorNode() override;
 
 private:
   struct CameraSubscribers {
