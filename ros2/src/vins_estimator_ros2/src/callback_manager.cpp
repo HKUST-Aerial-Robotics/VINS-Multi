@@ -3,7 +3,6 @@
 #include <algorithm>
 
 #include <rclcpp/time.hpp>
-#include <tf2/LinearMath/Quaternion.h>
 #include <geometry_msgs/msg/quaternion.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 
@@ -159,19 +158,32 @@ void CallbackManager::publish_full_report_cb(const Publisher::FullReportData & d
   pub_margin_cloud_->publish(marginized);
 
   if (data.update_latest) {
-    if (data.latest_frame_pose.publish_tf) {
-      geometry_msgs::msg::TransformStamped transform;
-      transform.header.stamp = stamp;
-      transform.header.frame_id = "world";
-      transform.child_frame_id = "vins_body";
-      transform.transform.translation.x = data.latest_frame_pose.position.x();
-      transform.transform.translation.y = data.latest_frame_pose.position.y();
-      transform.transform.translation.z = data.latest_frame_pose.position.z();
-      transform.transform.rotation.x = data.latest_frame_pose.orientation.x();
-      transform.transform.rotation.y = data.latest_frame_pose.orientation.y();
-      transform.transform.rotation.z = data.latest_frame_pose.orientation.z();
-      transform.transform.rotation.w = data.latest_frame_pose.orientation.w();
-      tf_broadcaster_.sendTransform(transform);
+    geometry_msgs::msg::TransformStamped body_tf;
+    body_tf.header.stamp = stamp;
+    body_tf.header.frame_id = "world";
+    body_tf.child_frame_id = "body";
+    body_tf.transform.translation.x = data.TF_correct_pose.position.x();
+    body_tf.transform.translation.y = data.TF_correct_pose.position.y();
+    body_tf.transform.translation.z = data.TF_correct_pose.position.z();
+    body_tf.transform.rotation.x = data.TF_correct_pose.orientation.x();
+    body_tf.transform.rotation.y = data.TF_correct_pose.orientation.y();
+    body_tf.transform.rotation.z = data.TF_correct_pose.orientation.z();
+    body_tf.transform.rotation.w = data.TF_correct_pose.orientation.w();
+    tf_broadcaster_.sendTransform(body_tf);
+
+    for (size_t i = 0; i < data.pub_camera_extrinsic_params.size(); ++i) {
+      geometry_msgs::msg::TransformStamped cam_tf;
+      cam_tf.header.stamp = stamp;
+      cam_tf.header.frame_id = "world";
+      cam_tf.child_frame_id = "camera_" + std::to_string(i);
+      cam_tf.transform.translation.x = data.pub_camera_extrinsic_params[i].position.x();
+      cam_tf.transform.translation.y = data.pub_camera_extrinsic_params[i].position.y();
+      cam_tf.transform.translation.z = data.pub_camera_extrinsic_params[i].position.z();
+      cam_tf.transform.rotation.x = data.pub_camera_extrinsic_params[i].orientation.x();
+      cam_tf.transform.rotation.y = data.pub_camera_extrinsic_params[i].orientation.y();
+      cam_tf.transform.rotation.z = data.pub_camera_extrinsic_params[i].orientation.z();
+      cam_tf.transform.rotation.w = data.pub_camera_extrinsic_params[i].orientation.w();
+      tf_broadcaster_.sendTransform(cam_tf);
     }
 
     nav_msgs::msg::Odometry latest_odometry;

@@ -47,13 +47,15 @@ The command above whitelists the ROS¹ package (`vins_estimator_ros1`) so that t
 ROS² sources live under `ros2/src`. Build them with `colcon`, pointing to the same core installation:
 
 ```bash
+# Ensure catkin_pkg is available (ament parses package.xml via catkin_pkg)
+python3 -m pip install --user catkin_pkg  # or: sudo apt install python3-catkin-pkg
+
 cd ros2
 source /opt/ros/humble/setup.bash  # or your ROS2 distro
 colcon build \
   --packages-select vins_estimator_ros2 \
   --build-base build_ros2 \
   --install-base install_ros2 \
-  --log-base log_ros2 \
   --cmake-args -DCMAKE_PREFIX_PATH="$(pwd)/../core/install"
 ```
 

@@ -1,6 +1,7 @@
 #include "vins_estimator_ros2/node.hpp"
 
 #include <chrono>
+#include <functional>
 #include <utility>
 
 #include <cv_bridge/cv_bridge.h>
@@ -59,7 +60,7 @@ void VinsEstimatorNode::load_parameters() {
   }
 
   RCLCPP_INFO(this->get_logger(), "Loading configuration: %s", config_file.c_str());
-  readParameters(config_file);
+  vins_multi::readParameters(config_file);
 }
 
 void VinsEstimatorNode::setup_subscribers() {
@@ -86,11 +87,12 @@ void VinsEstimatorNode::setup_subscribers() {
       cam->sync = std::make_shared<message_filters::Synchronizer<CameraSubscribers::SyncPolicy>>(
         CameraSubscribers::SyncPolicy(20), cam->img0_sub, cam->img1_sub);
       cam->sync->registerCallback(
-        [this, id = cam->unique_id](
-          const sensor_msgs::msg::Image::ConstSharedPtr & img0,
-          const sensor_msgs::msg::Image::ConstSharedPtr & img1) {
-          handle_stereo_image(id, img0, img1);
-        });
+        std::bind(
+          &VinsEstimatorNode::handle_stereo_image,
+          this,
+          cam->unique_id,
+          std::placeholders::_1,
+          std::placeholders::_2));
     } else {
       cam->mono_sub = this->create_subscription<sensor_msgs::msg::Image>(
         module.img_topic_[0], sensor_qos,

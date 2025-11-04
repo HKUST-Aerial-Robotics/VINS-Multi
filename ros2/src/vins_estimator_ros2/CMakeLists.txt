@@ -44,10 +44,9 @@ target_include_directories(vins_estimator_ros2_core
     ${OpenCV_INCLUDE_DIRS}
 )
 target_link_libraries(vins_estimator_ros2_core
-  PUBLIC
-    vins_estimator::vins_estimator
-    ${OpenCV_LIBS}
-    Eigen3::Eigen
+  vins_estimator::vins_estimator
+  ${OpenCV_LIBS}
+  Eigen3::Eigen
 )
 ament_target_dependencies(vins_estimator_ros2_core
   ${THIS_PACKAGE_INCLUDE_DEPENDS}
