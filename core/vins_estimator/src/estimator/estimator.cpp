@@ -235,7 +235,7 @@ void Estimator::inputImage(const unsigned int unique_id, double t, const cv::Mat
 
     // make sure no imu delay
     int wait_cnt = 0;
-    while(1)
+    while(processing_threads_running_.load())
     {
         if ((!USE_IMU  || IMUAvailable(real_img_time)))
             break;
@@ -249,6 +249,10 @@ void Estimator::inputImage(const unsigned int unique_id, double t, const cv::Mat
         }
         wait_cnt++;
         wait_cnt %= 100;
+    }
+
+    if (USE_IMU && !processing_threads_running_.load() && !IMUAvailable(real_img_time)) {
+        return;
     }
 
     mBuf_.lock();
