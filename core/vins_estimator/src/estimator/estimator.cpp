@@ -1201,7 +1201,7 @@ void Estimator::processWindow(const int img_cam_unique_id){
 
     if(needMarginalization()){
         // tt.tic();
-        constructMarginalizationFator();
+        constructMarginalizationFactor();
         // printf("marginalization factor time: %lf ms\n", tt.toc());
         // tt.tic();
 

@@ -246,7 +246,7 @@ class Estimator
 
     // void constructMarginalizationInfo();
     // void constructPriorFactor(shared_ptr<ImageFrame>& frame_ptr_to_margin);
-    void constructMarginalizationFator();
+    void constructMarginalizationFactor();
     // internal
     void clearState();
     // bool initialStructure();
