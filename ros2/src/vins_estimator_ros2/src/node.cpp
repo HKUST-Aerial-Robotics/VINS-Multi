@@ -1,5 +1,6 @@
 #include "vins_estimator_ros2/node.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <functional>
 #include <memory>
@@ -81,11 +82,14 @@ void VinsEstimatorNode::load_parameters() {
 }
 
 void VinsEstimatorNode::setup_subscribers() {
-  auto sensor_qos = rclcpp::SensorDataQoS();
+  auto imu_qos = rclcpp::SensorDataQoS().keep_last(2000).best_effort();
   imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
     vins_multi::IMU_MODULE.imu_topic_,
-    sensor_qos,
+    imu_qos,
     std::bind(&VinsEstimatorNode::handle_imu, this, std::placeholders::_1));
+
+  const auto mono_queue_depth = static_cast<size_t>(1000);
+  auto mono_qos = rclcpp::SensorDataQoS().keep_last(mono_queue_depth).best_effort();
 
   camera_subs_.clear();
   camera_subs_.reserve(vins_multi::CAM_MODULES.size());
@@ -97,8 +101,10 @@ void VinsEstimatorNode::setup_subscribers() {
 
     const auto & module = cam->module_info;
     if (module.depth_ || module.stereo_) {
-      cam->img0_sub.subscribe(this, module.img_topic_[0], rmw_qos_profile_sensor_data);
-      cam->img1_sub.subscribe(this, module.img_topic_[1], rmw_qos_profile_sensor_data);
+      rmw_qos_profile_t stereo_qos = rmw_qos_profile_sensor_data;
+      stereo_qos.depth = std::max<size_t>(stereo_qos.depth, 50);
+      cam->img0_sub.subscribe(this, module.img_topic_[0], stereo_qos);
+      cam->img1_sub.subscribe(this, module.img_topic_[1], stereo_qos);
       cam->sync = std::make_shared<message_filters::Synchronizer<CameraSubscribers::SyncPolicy>>(
         CameraSubscribers::SyncPolicy(20), cam->img0_sub, cam->img1_sub);
       cam->sync->registerCallback(
@@ -110,7 +116,7 @@ void VinsEstimatorNode::setup_subscribers() {
           std::placeholders::_2));
     } else {
       cam->mono_sub = this->create_subscription<sensor_msgs::msg::Image>(
-        module.img_topic_[0], sensor_qos,
+        module.img_topic_[0], mono_qos,
         [this, id = cam->unique_id](const sensor_msgs::msg::Image::SharedPtr msg) {
           handle_mono_image(id, msg);
         });
