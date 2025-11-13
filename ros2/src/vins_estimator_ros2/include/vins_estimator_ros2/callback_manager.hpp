@@ -35,6 +35,13 @@ public:
   void publish_full_report_cb(const Publisher::FullReportData & data);
 
 private:
+  // Construct a builtin ROS time stamp from seconds using the node's clock type
+  inline rclcpp::Time make_stamp(double seconds) const {
+    // Preserve ROS time when /use_sim_time is enabled to avoid offset/lag
+    const auto clock_type = node_->get_clock()->get_clock_type();
+    return rclcpp::Time(static_cast<int64_t>(seconds * 1e9), clock_type);
+  }
+
   rclcpp::Node::SharedPtr node_;
 
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr pub_odometry_;

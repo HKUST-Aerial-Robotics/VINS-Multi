@@ -2138,7 +2138,7 @@ void Estimator::updateLatestStates(const int unique_id)
 void Estimator::collectPropogationData(Publisher::PropagateData& data){
     static const double interpolation_alpha = 0.5;
     const double t = this->state_hist_.back().t_;
-    const Eigen::Vector3d& P = this->state_hist_.back().P_lpf_;    
+    const Eigen::Vector3d& P = this->state_hist_.back().P_lpf_;
     const Eigen::Quaterniond &R= this->state_hist_.back().Q_lpf_;
     const Eigen::Vector3d &V = this->state_hist_.back().V_lpf_;
     const Eigen::Vector3d &omega =  this->state_hist_.back().un_gyr_;
@@ -2155,6 +2155,10 @@ void Estimator::collectPropogationData(Publisher::PropagateData& data){
     v_center = center_R_imu * V - omega_center.cross(center_T_imu);
     v_center = Utility::lerp(last_vel_, v_center, interpolation_alpha);
     omega_center = Utility::lerp(last_omega_, omega_center, interpolation_alpha);
+    last_pos_ = w_T_center;
+    last_q_ = q_center;
+    last_vel_ = v_center;
+    last_omega_ = omega_center;
     data.timestamp = t;
     data.position = w_T_center;
     data.orientation = q_center;

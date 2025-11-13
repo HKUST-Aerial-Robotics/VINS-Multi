@@ -32,11 +32,14 @@ cv::Mat convert_color(const cv::Mat & image, int code) {
 
 VinsEstimatorNode::VinsEstimatorNode(const rclcpp::NodeOptions & options)
 : rclcpp::Node("vins_estimator_ros2", options) {
+  // Load parameters first to initialize vins_multi::CAM_MODULES/IMU_MODULE
+  load_parameters();
+
+  // Create publishers after parameters are loaded so per-camera topics are created correctly
   auto node_shared = std::shared_ptr<rclcpp::Node>(this, [](rclcpp::Node *) {});
   callback_manager_ = std::make_shared<CallbackManager>(node_shared);
 
-  load_parameters();
-
+  // Configure estimator after parameters are ready
   estimator_.setParameter();
 
   estimator_.publisher_callbacks_.on_publish_propogate_odom_cb =
@@ -47,6 +50,7 @@ VinsEstimatorNode::VinsEstimatorNode(const rclcpp::NodeOptions & options)
     [this](const Publisher::TrackImageData & data) {
       callback_manager_->publish_track_image_cb(data);
     };
+  // Optional: enable/disable full report publications via parameter
   estimator_.publisher_callbacks_.on_publish_full_report_cb =
     [this](const Publisher::FullReportData & data) {
       callback_manager_->publish_full_report_cb(data);
@@ -82,13 +86,14 @@ void VinsEstimatorNode::load_parameters() {
 }
 
 void VinsEstimatorNode::setup_subscribers() {
-  auto imu_qos = rclcpp::SensorDataQoS().keep_last(2000).best_effort();
+  // IMU uses reliable delivery per request
+  auto imu_qos = rclcpp::SensorDataQoS().keep_last(2000).reliable();
   imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
     vins_multi::IMU_MODULE.imu_topic_,
     imu_qos,
     std::bind(&VinsEstimatorNode::handle_imu, this, std::placeholders::_1));
 
-  const auto mono_queue_depth = static_cast<size_t>(1000);
+  const auto mono_queue_depth = static_cast<size_t>(10);
   auto mono_qos = rclcpp::SensorDataQoS().keep_last(mono_queue_depth).best_effort();
 
   camera_subs_.clear();

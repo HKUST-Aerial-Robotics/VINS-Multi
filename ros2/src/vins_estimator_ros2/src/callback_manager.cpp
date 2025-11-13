@@ -7,6 +7,7 @@
 #include <geometry_msgs/msg/transform_stamped.hpp>
 
 #include "utility/utility.h"
+#include "estimator/parameters.h"
 
 namespace vins_estimator_ros2 {
 
@@ -19,6 +20,7 @@ CallbackManager::CallbackManager(const rclcpp::Node::SharedPtr & node)
   tf_broadcaster_(node) {
   const auto queue_depth = rclcpp::QoS(rclcpp::KeepLast(1000));
 
+  // ROS2 style: publish relative topics; namespace is provided by launch
   pub_odometry_ = node_->create_publisher<nav_msgs::msg::Odometry>("odometry", queue_depth);
   pub_latest_odometry_ =
     node_->create_publisher<nav_msgs::msg::Odometry>("imu_propagate", queue_depth);
@@ -39,7 +41,7 @@ CallbackManager::CallbackManager(const rclcpp::Node::SharedPtr & node)
   pub_image_track_.reserve(module_count);
 
   for (size_t i = 0; i < module_count; ++i) {
-    const auto idx = std::to_string(i);
+    const auto idx = std::to_string(i + 1);
     pub_point_cloud_.push_back(
       node_->create_publisher<sensor_msgs::msg::PointCloud>("point_cloud_" + idx, queue_depth));
     pub_camera_pose_.push_back(
@@ -66,7 +68,7 @@ void CallbackManager::publish_track_image_cb(const Publisher::TrackImageData & d
     return;
   }
   std_msgs::msg::Header header;
-  header.stamp = rclcpp::Time(data.timestamp * 1e9);
+  header.stamp = make_stamp(data.timestamp);
   header.frame_id = "world";
   sensor_msgs::msg::Image::SharedPtr msg =
     cv_bridge::CvImage(header, "bgr8", data.image).toImageMsg();
@@ -74,52 +76,73 @@ void CallbackManager::publish_track_image_cb(const Publisher::TrackImageData & d
 }
 
 void CallbackManager::publish_propagate_cb(const Publisher::PropagateData & data) {
+  const auto stamp = make_stamp(data.timestamp);
+
+  // Core already outputs center-frame, low-pass filtered state. Do not filter again to
+  // avoid scale shrink; just convert to IMU body pose like ROS1 visualization.cpp.
+  const Eigen::Vector3d & center_pos = data.position;
+  const Eigen::Vector3d & center_vel = data.velocity;
+  const Eigen::Vector3d & center_omega = data.angular_velocity;
+  const Eigen::Quaterniond & q_center = data.orientation;
+
+  last_pos_ = center_pos;
+  last_vel_ = center_vel;
+  last_omega_ = center_omega;
+  last_q_ = q_center;
+
+  const Eigen::Vector3d & pos = center_pos;
+  const Eigen::Vector3d & vel = center_vel;
+  const Eigen::Vector3d & omg = center_omega;
+  const Eigen::Quaterniond & q = q_center;
+
   nav_msgs::msg::Odometry odometry;
-  odometry.header.stamp = rclcpp::Time(data.timestamp * 1e9);
+  odometry.header.stamp = stamp;
   odometry.header.frame_id = "world";
-  odometry.pose.pose.position.x = data.position.x();
-  odometry.pose.pose.position.y = data.position.y();
-  odometry.pose.pose.position.z = data.position.z();
-  odometry.pose.pose.orientation.x = data.orientation.x();
-  odometry.pose.pose.orientation.y = data.orientation.y();
-  odometry.pose.pose.orientation.z = data.orientation.z();
-  odometry.pose.pose.orientation.w = data.orientation.w();
-  odometry.twist.twist.linear.x = data.velocity.x();
-  odometry.twist.twist.linear.y = data.velocity.y();
-  odometry.twist.twist.linear.z = data.velocity.z();
-  odometry.twist.twist.angular.x = data.angular_velocity.x();
-  odometry.twist.twist.angular.y = data.angular_velocity.y();
-  odometry.twist.twist.angular.z = data.angular_velocity.z();
+  odometry.child_frame_id.clear();
+  odometry.pose.pose.position.x = pos.x();
+  odometry.pose.pose.position.y = pos.y();
+  odometry.pose.pose.position.z = pos.z();
+  odometry.pose.pose.orientation.x = q.x();
+  odometry.pose.pose.orientation.y = q.y();
+  odometry.pose.pose.orientation.z = q.z();
+  odometry.pose.pose.orientation.w = q.w();
+  odometry.twist.twist.linear.x = vel.x();
+  odometry.twist.twist.linear.y = vel.y();
+  odometry.twist.twist.linear.z = vel.z();
+  odometry.twist.twist.angular.x = omg.x();
+  odometry.twist.twist.angular.y = omg.y();
+  odometry.twist.twist.angular.z = omg.z();
   pub_latest_odometry_->publish(odometry);
 
-  for (size_t i = 0; i < data.camera_poses.size() && i < pub_latest_camera_pose_.size(); ++i) {
-    geometry_msgs::msg::PoseStamped cam_pose;
-    cam_pose.header = odometry.header;
-    cam_pose.pose.position.x = data.camera_poses[i].position[0].x();
-    cam_pose.pose.position.y = data.camera_poses[i].position[0].y();
-    cam_pose.pose.position.z = data.camera_poses[i].position[0].z();
-    cam_pose.pose.orientation.x = data.camera_poses[i].orientation[0].x();
-    cam_pose.pose.orientation.y = data.camera_poses[i].orientation[0].y();
-    cam_pose.pose.orientation.z = data.camera_poses[i].orientation[0].z();
-    cam_pose.pose.orientation.w = data.camera_poses[i].orientation[0].w();
-    pub_latest_camera_pose_[i]->publish(cam_pose);
+  // for (size_t i = 0; i < data.camera_poses.size() && i < pub_latest_camera_pose_.size(); ++i) {
+  //   geometry_msgs::msg::PoseStamped cam_pose;
+  //   cam_pose.header = odometry.header;
+  //   cam_pose.pose.position.x = data.camera_poses[i].position[0].x();
+  //   cam_pose.pose.position.y = data.camera_poses[i].position[0].y();
+  //   cam_pose.pose.position.z = data.camera_poses[i].position[0].z();
+  //   cam_pose.pose.orientation.x = data.camera_poses[i].orientation[0].x();
+  //   cam_pose.pose.orientation.y = data.camera_poses[i].orientation[0].y();
+  //   cam_pose.pose.orientation.z = data.camera_poses[i].orientation[0].z();
+  //   cam_pose.pose.orientation.w = data.camera_poses[i].orientation[0].w();
+  //   pub_latest_camera_pose_[i]->publish(cam_pose);
 
-    cameraposevisual_.reset();
-    cameraposevisual_.add_pose(
-      data.camera_poses[i].position[0], data.camera_poses[i].orientation[0]);
-    if (data.camera_poses[i].position.size() > 1) {
-      cameraposevisual_.add_pose(
-        data.camera_poses[i].position[1], data.camera_poses[i].orientation[1]);
-    }
-    cameraposevisual_.publish_by(pub_camera_pose_visual_[i], odometry.header);
-  }
+  //   cameraposevisual_.reset();
+  //   cameraposevisual_.add_pose(
+  //     data.camera_poses[i].position[0], data.camera_poses[i].orientation[0]);
+  //   if (data.camera_poses[i].position.size() > 1) {
+  //     cameraposevisual_.add_pose(
+  //       data.camera_poses[i].position[1], data.camera_poses[i].orientation[1]);
+  //   }
+  //   cameraposevisual_.publish_by(pub_camera_pose_visual_[i], odometry.header);
+  // }
+  return;
 }
 
 void CallbackManager::publish_full_report_cb(const Publisher::FullReportData & data) {
-  const auto stamp = rclcpp::Time(data.timestamp * 1e9);
+  const auto stamp = make_stamp(data.timestamp);
 
   geometry_msgs::msg::PoseStamped cam_pose;
-  cam_pose.header.stamp = rclcpp::Time(data.camera_time * 1e9);
+    cam_pose.header.stamp = make_stamp(data.camera_time);
   cam_pose.header.frame_id = "world";
   cam_pose.pose.position.x = data.camera_pose.position.x();
   cam_pose.pose.position.y = data.camera_pose.position.y();
@@ -199,7 +222,8 @@ void CallbackManager::publish_full_report_cb(const Publisher::FullReportData & d
     latest_odometry.twist.twist.linear.x = data.latest_frame_pose.velocity.x();
     latest_odometry.twist.twist.linear.y = data.latest_frame_pose.velocity.y();
     latest_odometry.twist.twist.linear.z = data.latest_frame_pose.velocity.z();
-    pub_latest_odometry_->publish(latest_odometry);
+    // Full (backend-updated) odometry must go to the odometry topic, not imu_propagate
+    pub_odometry_->publish(latest_odometry);
 
     geometry_msgs::msg::PoseStamped pose_stamped;
     pose_stamped.header = latest_odometry.header;
