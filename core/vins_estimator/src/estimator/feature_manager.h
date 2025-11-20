@@ -36,7 +36,7 @@ class FeatureManager
     ~FeatureManager();
 
     void setCamInfo(camera_module_info& cam_info){
-      cam_info_ptr_.reset(&cam_info);
+      cam_info_ptr_ = &cam_info;
     }
     // void setRic(Matrix3d _ric[]);
     void clearState();
@@ -89,7 +89,7 @@ class FeatureManager
     bool stereo_;
     bool depth_;
     vector<shared_ptr<ImageFrame>>& image_frame_ptr_;
-    shared_ptr<camera_module_info> cam_info_ptr_;
+    camera_module_info* cam_info_ptr_ = nullptr;
 };
 
 }

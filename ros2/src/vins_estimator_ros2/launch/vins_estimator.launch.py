@@ -24,11 +24,18 @@ def generate_launch_description():
         description="Path to the VINS configuration YAML file."
     )
 
+    prefix_arg = DeclareLaunchArgument(
+        "prefix",
+        default_value=TextSubstitution(text=""),
+        description="Optional launch prefix (e.g. 'gdb -ex run --args')."
+    )
+
     node = Node(
         package="vins_estimator_ros2",
         executable="vins_estimator_ros2_node",
         namespace=LaunchConfiguration("namespace"),
         output="screen",
+        prefix=LaunchConfiguration("prefix"),
         parameters=[{
             "config_file": LaunchConfiguration("config_file"),
         }]
@@ -37,5 +44,6 @@ def generate_launch_description():
     return LaunchDescription([
         namespace_arg,
         config_arg,
+        prefix_arg,
         node,
     ])

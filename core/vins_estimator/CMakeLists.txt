@@ -11,6 +11,7 @@ endif()
 
 option(ENABLE_BACKWARD "Enable backward-cpp stacktrace support" OFF)
 option(VINS_USE_CUDA "Enable CUDA support" OFF)
+option(VINS_BUILD_TESTS "Build VINS estimator unit tests" OFF)
 
 if(NOT TARGET camera_models::camera_models)
   find_package(camera_models CONFIG REQUIRED)
@@ -98,6 +99,23 @@ endif()
 if(VINS_USE_CUDA AND CUDA_FOUND)
   target_link_libraries(vins_estimator PUBLIC ${CUDA_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDA_cusparse_LIBRARY})
   target_include_directories(vins_estimator PUBLIC ${CUDA_INCLUDE_DIRS})
+endif()
+
+if(VINS_BUILD_TESTS)
+  include(CTest)
+  find_package(GTest REQUIRED)
+
+  add_executable(vins_estimator_core_tests
+    ../tests/estimator_lifecycle_test.cpp
+  )
+
+  target_link_libraries(vins_estimator_core_tests
+    PRIVATE
+      vins_estimator
+      GTest::gtest_main
+  )
+
+  add_test(NAME estimator_lifecycle COMMAND vins_estimator_core_tests)
 endif()
 
 include(GNUInstallDirs)

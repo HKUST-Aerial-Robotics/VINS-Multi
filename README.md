@@ -27,6 +27,29 @@ cmake --build core/build -j$(nproc)
 cmake --install core/build --prefix core/install
 ```
 
+```
+   cd /home/nvidia/workspace/vins_multi_ws/src/VINS-Multi
+   cmake -S core -B core/build \
+     -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+     -DCMAKE_CXX_FLAGS="-O0 -g3"
+   cmake --build core/build -j$(nproc)
+   cmake --install core/build --prefix core/install
+```
+
+```
+   cd /home/nvidia/workspace/vins_multi_ws/src/VINS-Multi/ros2
+   source /opt/ros/humble/setup.bash
+   colcon build \
+     --base-paths src \
+     --packages-select vins_estimator_ros2 \
+     --build-base build_ros2_debug \
+     --install-base install_ros2_debug \
+     --cmake-args \
+       -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+       -DCMAKE_CXX_FLAGS="-O0 -g3" \
+       -DCMAKE_PREFIX_PATH=/home/nvidia/workspace/vins_multi_ws/src/VINS-Multi/core/install
+```
+
 This installs the static libraries (`camera_models`, `vins_estimator`) plus their CMake package files under `core/install/`.
 
 ## 2. Build the ROS1 Wrapper (catkin)

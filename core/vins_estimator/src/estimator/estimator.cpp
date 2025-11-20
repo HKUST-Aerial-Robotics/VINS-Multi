@@ -32,6 +32,7 @@ Estimator::~Estimator()
     if (last_marginalization_info_ != nullptr){
         delete last_marginalization_info_;
     }
+
 }
 
 void Estimator::clearState()

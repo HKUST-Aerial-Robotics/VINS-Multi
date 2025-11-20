@@ -125,6 +125,10 @@ class Estimator
                 featureTracker_.readIntrinsicParameter(cam_module.calib_file_);
             }
 
+            ~imgTracker(){
+                // spdlog::info("imgTracker destructor");
+            }
+
 
             void set_f_manager_cam_info(){
                 f_manager_.setCamInfo(this->cam_info_);
